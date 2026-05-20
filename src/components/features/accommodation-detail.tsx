@@ -10,6 +10,7 @@ import {
   Info,
   LogOut,
   MapPin,
+  MessageSquare,
   Navigation,
   Sparkles,
   Star,
@@ -25,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn, formatCurrency, haversineDistanceKm } from "@/lib/utils";
 import { DESTINATIONS } from "@/lib/mock-data";
+import { useVibeStore } from "@/lib/store";
 import type { Accommodation, GeoCoords, Preference } from "@/lib/types";
 
 interface AccommodationDetailProps {
@@ -46,6 +48,13 @@ export function AccommodationDetail({
 }: AccommodationDetailProps) {
   const [activeImage, setActiveImage] = React.useState<string | null>(null);
   const [copied, setCopied] = React.useState(false);
+  const [shared, setShared] = React.useState(false);
+
+  const activeGroupId = useVibeStore((s) => s.activeGroupId);
+  const groups = useVibeStore((s) => s.groups);
+  const addMessage = useVibeStore((s) => s.addMessage);
+  const user = useVibeStore((s) => s.user);
+  const activeGroup = groups.find((g) => g.id === activeGroupId) ?? groups[0] ?? null;
 
   React.useEffect(() => {
     if (accommodation) setActiveImage(accommodation.imageUrl);
@@ -66,6 +75,19 @@ export function AccommodationDetail({
     await navigator.clipboard.writeText(accommodation.address);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
+  };
+
+  const shareToChat = () => {
+    if (!activeGroup || !user) return;
+    addMessage(activeGroup.id, {
+      authorId: user.id,
+      authorName: `${user.firstName} ${user.lastName}`,
+      authorAvatar: user.avatarDataUrl,
+      content: `📍 *${accommodation.name}*\n${accommodation.address}\n💰 ${formatCurrency(accommodation.pricePerNight)}/night · ⭐ ${accommodation.rating} (${accommodation.reviewCount.toLocaleString()} reviews)`,
+      kind: "text",
+    });
+    setShared(true);
+    setTimeout(() => setShared(false), 2000);
   };
 
   return (
@@ -224,13 +246,27 @@ export function AccommodationDetail({
                 </span>
               </div>
             </div>
-            <div className="flex gap-2">
-              <Button variant="glass" asChild>
+            <div className="flex flex-wrap gap-2">
+              {activeGroup && (
+                <Button
+                  variant="glass"
+                  size="sm"
+                  className="flex-1 sm:flex-none"
+                  onClick={shareToChat}
+                >
+                  {shared ? (
+                    <><Check className="h-3.5 w-3.5" /> Shared!</>
+                  ) : (
+                    <><MessageSquare className="h-3.5 w-3.5" /> Share to Chat</>
+                  )}
+                </Button>
+              )}
+              <Button variant="glass" className="flex-1" asChild>
                 <a href={mapsUrl} target="_blank" rel="noreferrer">
                   <Navigation className="h-4 w-4" /> Directions
                 </a>
               </Button>
-              <Button variant="accent" size="lg">
+              <Button variant="accent" size="lg" className="flex-1">
                 Book Now
               </Button>
             </div>

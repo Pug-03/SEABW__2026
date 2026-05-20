@@ -29,6 +29,7 @@ import { GpsFuelCalculator } from "@/components/features/gps-fuel-calculator";
 import { PackingChecklist } from "@/components/features/packing-checklist";
 import { SosWidget } from "@/components/features/sos-widget";
 import { PhotoWall } from "@/components/features/photo-wall";
+import { TripMap } from "@/components/features/trip-map";
 import { Splash } from "@/components/common/splash";
 import { useGeolocation } from "@/hooks/use-geolocation";
 import { useVibeStore } from "@/lib/store";
@@ -184,6 +185,10 @@ export default function TripPage() {
                     remainingBudget={remainingBudget}
                     origin={origin}
                   />
+                </div>
+
+                <div className="sm:col-span-2 xl:col-span-3">
+                  <TripMap origin={origin} destination={destination} />
                 </div>
 
                 <div className="sm:col-span-2 xl:col-span-3">

@@ -75,7 +75,7 @@ export default function AuthPage() {
         </div>
       </header>
 
-      <section className="flex flex-1 items-center justify-center py-10">
+      <section className="flex flex-1 items-start justify-center py-6 sm:items-center sm:py-10">
         <div className="w-full">
           {step === "auth" && (
             <div className="mx-auto w-full max-w-3xl space-y-8">

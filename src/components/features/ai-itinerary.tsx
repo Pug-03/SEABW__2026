@@ -33,6 +33,7 @@ export function AIItinerary({
   const [destId, setDestId] = React.useState(
     initialDestinationId ?? DESTINATIONS[0].id
   );
+  const [days, setDays] = React.useState(3);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [itinerary, setItinerary] = React.useState<Itinerary | null>(null);
@@ -52,8 +53,8 @@ export function AIItinerary({
           members: members.map((m) => m.name),
           budget,
           preferences,
-          days: 3,
-          nights: 2,
+          days,
+          nights: days - 1,
         }),
       });
       if (!res.ok) throw new Error("Failed");
@@ -79,7 +80,7 @@ export function AIItinerary({
             AI Trip Plan
           </CardTitle>
           <Badge variant="ai">
-            <Sparkles className="h-3 w-3" /> 3D / 2N
+            <Sparkles className="h-3 w-3" /> {days}D / {days - 1}N
           </Badge>
         </div>
       </CardHeader>
@@ -94,6 +95,15 @@ export function AIItinerary({
               <option key={d.id} value={d.id}>
                 {d.title}, {d.region}
               </option>
+            ))}
+          </select>
+          <select
+            value={days}
+            onChange={(e) => setDays(Number(e.target.value))}
+            className="h-10 w-full rounded-2xl border border-input bg-background/50 px-3 text-sm sm:w-28"
+          >
+            {[2, 3, 5, 7].map((d) => (
+              <option key={d} value={d}>{d} days</option>
             ))}
           </select>
           <Button

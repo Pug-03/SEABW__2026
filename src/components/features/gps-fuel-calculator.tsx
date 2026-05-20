@@ -103,8 +103,14 @@ export function GpsFuelCalculator({
           </div>
         </details>
 
-        <Button variant="glass" size="sm" className="w-full" disabled={!origin}>
-          <Navigation className="h-3.5 w-3.5" /> Open in Maps
+        <Button variant="glass" size="sm" className="w-full" asChild>
+          <a
+            href={`https://www.google.com/maps/dir/${origin ? `${origin.lat},${origin.lng}` : ""}/${destination.coords.lat},${destination.coords.lng}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            <Navigation className="h-3.5 w-3.5" /> Open in Maps
+          </a>
         </Button>
       </CardContent>
     </Card>

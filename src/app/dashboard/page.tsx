@@ -14,6 +14,8 @@ import { SettingsModal } from "@/components/dashboard/settings-modal";
 import { WeatherWidget } from "@/components/features/weather-widget";
 import { GpsFuelCalculator } from "@/components/features/gps-fuel-calculator";
 import { AIRecommendationsCard } from "@/components/features/ai-recommendations";
+import { BillSplitter } from "@/components/features/bill-splitter";
+import { DestinationDetail } from "@/components/features/destination-detail";
 import { Splash } from "@/components/common/splash";
 import { useVibeStore } from "@/lib/store";
 import { useGeolocation } from "@/hooks/use-geolocation";
@@ -33,6 +35,7 @@ export default function DashboardPage() {
   const [pickedDestId, setPickedDestId] = React.useState<string>(
     DESTINATIONS[0].id
   );
+  const [destDetailId, setDestDetailId] = React.useState<string | null>(null);
   const [searchQuery, setSearchQuery] = React.useState("");
   const resultsRef = React.useRef<HTMLDivElement>(null);
 
@@ -128,11 +131,18 @@ export default function DashboardPage() {
           </section>
         ) : (
           <section className="mt-12">
-            <SeasonalCarousel onSelect={setPickedDestId} />
+            <SeasonalCarousel
+              onSelect={setPickedDestId}
+              onViewDetail={setDestDetailId}
+            />
           </section>
         )}
 
-        <section className="mt-10 grid gap-4 lg:grid-cols-3">
+        <section className="mt-10">
+          <BillSplitter />
+        </section>
+
+        <section className="mt-6 grid gap-4 lg:grid-cols-3">
           <div className="space-y-4 lg:col-span-2">
             <div className="rounded-3xl border border-border/60 bg-card/70 p-5 backdrop-blur-xl">
               <div className="mb-3 flex items-center justify-between">
@@ -175,6 +185,11 @@ export default function DashboardPage() {
         onUpdate={updateUser}
       />
       <SettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} />
+      <DestinationDetail
+        destination={DESTINATIONS.find((d) => d.id === destDetailId) ?? null}
+        open={!!destDetailId}
+        onOpenChange={(v) => !v && setDestDetailId(null)}
+      />
     </main>
   );
 }

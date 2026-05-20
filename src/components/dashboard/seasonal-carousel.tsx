@@ -10,11 +10,13 @@ import { cn } from "@/lib/utils";
 interface SeasonalCarouselProps {
   destinations?: Destination[];
   onSelect?: (id: string) => void;
+  onViewDetail?: (id: string) => void;
 }
 
 export function SeasonalCarousel({
   destinations = DESTINATIONS,
   onSelect,
+  onViewDetail,
 }: SeasonalCarouselProps) {
   const [paused, setPaused] = React.useState(false);
   // Duplicate the list to enable a seamless -50% translate loop.
@@ -59,7 +61,10 @@ export function SeasonalCarousel({
             <DestinationCard
               key={`${d.id}-${idx}`}
               destination={d}
-              onClick={() => onSelect?.(d.id)}
+              onClick={() => {
+                onSelect?.(d.id);
+                onViewDetail?.(d.id);
+              }}
             />
           ))}
         </div>
