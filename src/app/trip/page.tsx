@@ -273,10 +273,17 @@ function MobileDrawer({
   mdHidden,
   children,
 }: MobileDrawerProps) {
+  // Keep onClose in a ref so the effect's dep array depends only on `open`,
+  // preventing churn when the parent recreates the callback each render.
+  const onCloseRef = React.useRef(onClose);
+  React.useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
   React.useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") onCloseRef.current();
     };
     window.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
@@ -284,7 +291,7 @@ function MobileDrawer({
       window.removeEventListener("keydown", onKey);
       document.body.style.overflow = "";
     };
-  }, [open, onClose]);
+  }, [open]);
 
   return (
     <div

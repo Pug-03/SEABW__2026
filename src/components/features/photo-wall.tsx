@@ -12,10 +12,15 @@ interface PhotoWallProps {
 }
 
 export function PhotoWall({ groupId }: PhotoWallProps) {
-  const photos = useVibeStore((s) =>
-    s.photos.filter((p) => p.groupId === groupId)
-  );
+  // Select the raw array (stable reference) and derive the filtered list with
+  // useMemo. A `.filter()` inside the selector would produce a new reference on
+  // every call and trip React's useSyncExternalStore loop guard.
+  const allPhotos = useVibeStore((s) => s.photos);
   const addPhoto = useVibeStore((s) => s.addPhoto);
+  const photos = React.useMemo(
+    () => allPhotos.filter((p) => p.groupId === groupId),
+    [allPhotos, groupId]
+  );
   const inputRef = React.useRef<HTMLInputElement>(null);
   const [pendingCaption, setPendingCaption] = React.useState("");
 
