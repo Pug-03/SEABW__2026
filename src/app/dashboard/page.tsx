@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TopNavbar } from "@/components/dashboard/top-navbar";
 import { SmartSearch } from "@/components/dashboard/smart-search";
+import { SearchResults } from "@/components/dashboard/search-results";
 import { SeasonalCarousel } from "@/components/dashboard/seasonal-carousel";
 import { ProfileModal } from "@/components/dashboard/profile-modal";
 import { SettingsModal } from "@/components/dashboard/settings-modal";
@@ -32,9 +33,31 @@ export default function DashboardPage() {
   const [pickedDestId, setPickedDestId] = React.useState<string>(
     DESTINATIONS[0].id
   );
+  const [searchQuery, setSearchQuery] = React.useState("");
+  const resultsRef = React.useRef<HTMLDivElement>(null);
 
   const pickedDest =
     DESTINATIONS.find((d) => d.id === pickedDestId) ?? DESTINATIONS[0];
+
+  const handleSearchSubmit = (q: string) => {
+    setSearchQuery(q);
+    if (q) {
+      // Defer to next frame so the results section is mounted before scrolling.
+      requestAnimationFrame(() => {
+        resultsRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      });
+    }
+  };
+
+  const handleSearchClear = () => setSearchQuery("");
+
+  const handlePickResult = (id: string) => {
+    setPickedDestId(id);
+    setSearchQuery("");
+  };
 
   React.useEffect(() => {
     if (hydrated && !user) router.replace("/");
@@ -72,7 +95,12 @@ export default function DashboardPage() {
             crew in one tap.
           </p>
           <div className="mt-6">
-            <SmartSearch onSelect={setPickedDestId} />
+            <SmartSearch
+              initialQuery={searchQuery}
+              onSubmit={handleSearchSubmit}
+              onClear={handleSearchClear}
+              onPickSuggestion={setPickedDestId}
+            />
           </div>
 
           <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
@@ -90,9 +118,19 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        <section className="mt-12">
-          <SeasonalCarousel onSelect={setPickedDestId} />
-        </section>
+        {searchQuery.trim() ? (
+          <section ref={resultsRef} className="mt-10">
+            <SearchResults
+              query={searchQuery}
+              onPick={handlePickResult}
+              onClear={handleSearchClear}
+            />
+          </section>
+        ) : (
+          <section className="mt-12">
+            <SeasonalCarousel onSelect={setPickedDestId} />
+          </section>
+        )}
 
         <section className="mt-10 grid gap-4 lg:grid-cols-3">
           <div className="space-y-4 lg:col-span-2">

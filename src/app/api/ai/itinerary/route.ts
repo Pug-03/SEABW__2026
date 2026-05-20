@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import type { Itinerary } from "@/lib/types";
 
-export const runtime = "edge";
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 interface RequestBody {
   destination: string;

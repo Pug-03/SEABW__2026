@@ -125,11 +125,19 @@ export function ProfileCreation({
             </div>
           </div>
 
-          <div className="flex gap-2">
-            <Button variant="glass" onClick={share} className="flex-1">
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+            <Button
+              variant="glass"
+              onClick={share}
+              className="w-full min-w-0 whitespace-nowrap px-5 sm:w-auto sm:flex-1"
+            >
               <Share2 className="h-4 w-4" /> Share invite
             </Button>
-            <Button variant="accent" onClick={onContinue} className="flex-1">
+            <Button
+              variant="accent"
+              onClick={onContinue}
+              className="mx-auto w-fit min-w-0 max-w-full whitespace-nowrap px-6 sm:mx-0 sm:w-auto sm:flex-1"
+            >
               <Users className="h-4 w-4" /> Go to dashboard
             </Button>
           </div>

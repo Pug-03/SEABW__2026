@@ -8,6 +8,7 @@ import {
   Map as MapIcon,
   Menu,
   SquarePen,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -33,6 +34,7 @@ import { useGeolocation } from "@/hooks/use-geolocation";
 import { useVibeStore } from "@/lib/store";
 import { useStoreHydrated } from "@/hooks/use-store-hydrated";
 import { DESTINATIONS } from "@/lib/mock-data";
+import { cn } from "@/lib/utils";
 
 export default function TripPage() {
   const router = useRouter();
@@ -58,20 +60,40 @@ export default function TripPage() {
     if (hydrated && user && groups.length === 0) setShowFirstTrip(true);
   }, [hydrated, user, groups.length]);
 
-  const active = groups.find((g) => g.id === activeGroupId) ?? groups[0];
-  const destination = active?.destinationId
-    ? DESTINATIONS.find((d) => d.id === active.destinationId) ?? DESTINATIONS[0]
-    : DESTINATIONS[0];
+  // Close mobile drawer when viewport resizes to desktop so we never leave
+  // a stuck overlay behind.
+  React.useEffect(() => {
+    const onResize = () => {
+      if (window.innerWidth >= 768) setMobileSidebar(false);
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  const active = groups.find((g) => g.id === activeGroupId) ?? groups[0] ?? null;
+
+  const destination = React.useMemo(() => {
+    if (active?.destinationId) {
+      return (
+        DESTINATIONS.find((d) => d.id === active.destinationId) ??
+        DESTINATIONS[0]
+      );
+    }
+    return DESTINATIONS[0];
+  }, [active?.destinationId]);
 
   const remainingBudget = active
     ? Math.max(
         0,
-        active.budget - active.expenses.reduce((s, e) => s + e.amount, 0)
+        (active.budget ?? 0) -
+          (active.expenses ?? []).reduce((s, e) => s + (e.amount ?? 0), 0)
       )
     : 0;
 
   if (!hydrated) return <Splash />;
   if (!user) return null;
+
+  const origin = geo.coords ?? user.location ?? null;
 
   return (
     <main className="flex h-screen min-h-0 w-full overflow-hidden">
@@ -83,17 +105,18 @@ export default function TripPage() {
         />
       </div>
 
-      {/* Mobile sidebar */}
-      <Dialog open={mobileSidebar} onOpenChange={setMobileSidebar}>
-        <DialogContent className="left-0 top-0 max-w-[300px] translate-x-0 translate-y-0 rounded-none rounded-r-3xl p-0">
-          <DialogHeader className="sr-only">
-            <DialogTitle>Trip groups</DialogTitle>
-          </DialogHeader>
-          <div className="h-[100vh] w-full">
-            <GroupSidebar collapsed={false} onToggleCollapse={() => setMobileSidebar(false)} />
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Mobile sidebar — custom slide-in panel (no nested Dialog) */}
+      <MobileDrawer
+        open={mobileSidebar}
+        onClose={() => setMobileSidebar(false)}
+        side="left"
+        ariaLabel="Trip groups"
+      >
+        <GroupSidebar
+          collapsed={false}
+          onToggleCollapse={() => setMobileSidebar(false)}
+        />
+      </MobileDrawer>
 
       <section className="flex min-h-0 flex-1 flex-col">
         <div className="flex items-center gap-2 border-b border-border/60 bg-card/60 px-3 py-2 backdrop-blur-xl md:hidden">
@@ -105,7 +128,7 @@ export default function TripPage() {
           >
             <Menu className="h-4 w-4" />
           </Button>
-          <span className="text-sm font-medium">
+          <span className="truncate text-sm font-medium">
             {active ? active.name : "Trips"}
           </span>
           <div className="ml-auto">
@@ -121,8 +144,8 @@ export default function TripPage() {
         </div>
 
         {active ? (
-          <div className="flex min-h-0 flex-1">
-            <div className="flex min-w-0 flex-1 flex-col">
+          <div className="flex min-h-0 flex-1 overflow-hidden">
+            <div className="flex min-w-0 flex-1 flex-col overflow-y-auto">
               <ChatInterface
                 group={active}
                 user={user}
@@ -134,17 +157,17 @@ export default function TripPage() {
                 <div className="sm:col-span-2 xl:col-span-2">
                   <AIItinerary
                     initialDestinationId={destination.id}
-                    members={active.members.map((m) => ({ id: m.id, name: m.name }))}
+                    members={(active.members ?? []).map((m) => ({
+                      id: m.id,
+                      name: m.name,
+                    }))}
                     budget={active.budget || remainingBudget}
-                    preferences={user.preferences}
+                    preferences={user.preferences ?? []}
                   />
                 </div>
                 <WeatherWidget destination={destination} />
-                <GpsFuelCalculator
-                  origin={geo.coords ?? user.location ?? null}
-                  destination={destination}
-                />
-                <PackingChecklist preferences={user.preferences} />
+                <GpsFuelCalculator origin={origin} destination={destination} />
+                <PackingChecklist preferences={user.preferences ?? []} />
                 <SosWidget user={user} />
 
                 <div className="sm:col-span-2 xl:col-span-3">
@@ -157,9 +180,9 @@ export default function TripPage() {
                 <div className="sm:col-span-2 xl:col-span-3">
                   <AIRecommendationsCard
                     destination={destination}
-                    preferences={user.preferences}
+                    preferences={user.preferences ?? []}
                     remainingBudget={remainingBudget}
-                    origin={geo.coords ?? user.location ?? null}
+                    origin={origin}
                   />
                 </div>
 
@@ -180,26 +203,25 @@ export default function TripPage() {
             )}
           </div>
         ) : (
-          <EmptyState
-            onCreate={() => setShowFirstTrip(true)}
-          />
+          <EmptyState onCreate={() => setShowFirstTrip(true)} />
         )}
 
-        {/* Mobile expense drawer */}
-        <Dialog open={expenseOpen} onOpenChange={setExpenseOpen}>
-          <DialogContent className="md:hidden max-w-md p-0">
-            <DialogHeader className="sr-only">
-              <DialogTitle>Expenses</DialogTitle>
-            </DialogHeader>
-            {active && (
-              <ExpenseManager
-                group={active}
-                user={user}
-                onClose={() => setExpenseOpen(false)}
-              />
-            )}
-          </DialogContent>
-        </Dialog>
+        {/* Mobile expense drawer — custom slide-in (no nested Dialog) */}
+        <MobileDrawer
+          open={expenseOpen && !!active}
+          onClose={() => setExpenseOpen(false)}
+          side="right"
+          ariaLabel="Expense manager"
+          mdHidden
+        >
+          {active && (
+            <ExpenseManager
+              group={active}
+              user={user}
+              onClose={() => setExpenseOpen(false)}
+            />
+          )}
+        </MobileDrawer>
       </section>
 
       {/* First-time trip creation */}
@@ -234,6 +256,84 @@ export default function TripPage() {
   );
 }
 
+interface MobileDrawerProps {
+  open: boolean;
+  onClose: () => void;
+  side: "left" | "right";
+  ariaLabel: string;
+  mdHidden?: boolean;
+  children: React.ReactNode;
+}
+
+function MobileDrawer({
+  open,
+  onClose,
+  side,
+  ariaLabel,
+  mdHidden,
+  children,
+}: MobileDrawerProps) {
+  React.useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [open, onClose]);
+
+  return (
+    <div
+      role="dialog"
+      aria-label={ariaLabel}
+      aria-hidden={!open}
+      className={cn(
+        "fixed inset-0 z-50 md:hidden",
+        mdHidden && "md:hidden",
+        !open && "pointer-events-none"
+      )}
+    >
+      <button
+        type="button"
+        aria-label="Close"
+        onClick={onClose}
+        className={cn(
+          "absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity",
+          open ? "opacity-100" : "opacity-0"
+        )}
+      />
+      <div
+        className={cn(
+          "absolute inset-y-0 flex w-[88vw] max-w-[320px] flex-col bg-card shadow-2xl transition-transform duration-300",
+          side === "left"
+            ? "left-0 rounded-r-3xl"
+            : "right-0 rounded-l-3xl",
+          open
+            ? "translate-x-0"
+            : side === "left"
+            ? "-translate-x-full"
+            : "translate-x-full"
+        )}
+      >
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onClose}
+          aria-label="Close drawer"
+          className="absolute right-2 top-2 z-10"
+        >
+          <X className="h-4 w-4" />
+        </Button>
+        <div className="h-full overflow-y-auto">{children}</div>
+      </div>
+    </div>
+  );
+}
+
 function DestinationPicker({
   activeId,
   onPick,
@@ -249,16 +349,17 @@ function DestinationPicker({
       </div>
       <div className="flex gap-3 overflow-x-auto scrollbar-hide">
         {DESTINATIONS.slice(0, 10).map((d) => {
-          const active = d.id === activeId;
+          const isActive = d.id === activeId;
           return (
             <button
               key={d.id}
               onClick={() => onPick(d.id)}
-              className={`shrink-0 overflow-hidden rounded-2xl border text-left transition-all ${
-                active
+              className={cn(
+                "shrink-0 overflow-hidden rounded-2xl border text-left transition-all",
+                isActive
                   ? "border-accent shadow-md ring-2 ring-accent/40"
                   : "border-border hover:border-accent/40"
-              }`}
+              )}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -292,7 +393,7 @@ function EmptyState({ onCreate }: { onCreate: () => void }) {
           Spin up your first trip group to start chatting, splitting bills, and
           generating AI itineraries.
         </p>
-        <Button variant="accent" className="mt-4" onClick={onCreate}>
+        <Button variant="accent" className="mt-4 w-fit mx-auto" onClick={onCreate}>
           <ChevronLeft className="rotate-180 h-4 w-4" /> Create your first trip
         </Button>
       </div>
