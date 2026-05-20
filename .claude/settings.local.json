@@ -13,7 +13,8 @@
       "PowerShell(\\(Invoke-WebRequest http://localhost:3001/ -UseBasicParsing\\).StatusCode)",
       "PowerShell($r1 = \\(Invoke-WebRequest http://localhost:3002/ -UseBasicParsing\\).StatusCode; $r2 = \\(Invoke-WebRequest http://localhost:3002/dashboard -UseBasicParsing\\).StatusCode; $r3 = \\(Invoke-WebRequest http://localhost:3002/trip -UseBasicParsing\\).StatusCode; \"/=$r1 dashboard=$r2 trip=$r3\")",
       "PowerShell($r1 = \\(Invoke-WebRequest http://localhost:3004/ -UseBasicParsing\\).StatusCode; $r2 = \\(Invoke-WebRequest http://localhost:3004/dashboard -UseBasicParsing\\).StatusCode; $r3 = \\(Invoke-WebRequest http://localhost:3004/trip -UseBasicParsing\\).StatusCode; \"/=$r1 dashboard=$r2 trip=$r3\")",
-      "PowerShell($r = \\(Invoke-WebRequest http://localhost:3005/trip -UseBasicParsing\\).StatusCode; \"trip=$r\")"
+      "PowerShell($r = \\(Invoke-WebRequest http://localhost:3005/trip -UseBasicParsing\\).StatusCode; \"trip=$r\")",
+      "PowerShell($r1 = \\(Invoke-WebRequest http://localhost:3005/ -UseBasicParsing\\).StatusCode; \"/=$r1\")"
     ]
   }
 }

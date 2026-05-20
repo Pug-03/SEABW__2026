@@ -78,7 +78,7 @@ export default function AuthPage() {
       <section className="flex flex-1 items-center justify-center py-10">
         <div className="w-full">
           {step === "auth" && (
-            <div className="mx-auto grid w-full max-w-5xl gap-10 lg:grid-cols-2">
+            <div className="mx-auto w-full max-w-3xl space-y-8">
               <HeroIntro />
               <div className="rounded-[28px] border border-border/60 bg-card/70 p-6 shadow-xl backdrop-blur-2xl sm:p-8">
                 <Tabs
@@ -168,21 +168,21 @@ export default function AuthPage() {
 
 function HeroIntro() {
   return (
-    <div className="flex flex-col justify-center">
-      <div className="inline-flex w-fit items-center gap-1.5 rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-xs font-medium text-accent">
+    <div className="text-center">
+      <div className="mx-auto inline-flex items-center gap-1.5 rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-xs font-medium text-accent">
         <Sparkles className="h-3 w-3" /> AI-powered group travel
       </div>
       <h1 className="mt-4 text-balance text-4xl font-semibold tracking-tight sm:text-5xl">
         Plan trips that <span className="text-accent">actually happen</span>.
       </h1>
-      <p className="mt-3 text-balance text-base text-muted-foreground sm:text-lg">
+      <p className="mx-auto mt-3 max-w-2xl text-balance text-base text-muted-foreground sm:text-lg">
         VibeTrip aligns your crew on dates, splits the bill, and books stays
         that match your vibe — all in one calm, minimal app.
       </p>
-      <ul className="mt-6 space-y-2 text-sm text-muted-foreground">
+      <ul className="mx-auto mt-5 flex max-w-2xl flex-wrap items-center justify-center gap-x-5 gap-y-1 text-sm text-muted-foreground">
         <li>· Geolocation-aware suggestions</li>
         <li>· Bento preferences → AI recommendations</li>
-        <li>· Split bills with one-scan QR payments</li>
+        <li>· One-scan QR bill splits</li>
       </ul>
     </div>
   );

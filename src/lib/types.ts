@@ -19,6 +19,10 @@ export interface InsuranceDetails {
   emergencyContact: string;
 }
 
+export type IdentityDocument =
+  | { type: "id_card"; number: string }
+  | { type: "passport"; number: string };
+
 export interface User {
   id: string;
   phone: string;
@@ -31,6 +35,7 @@ export interface User {
   preferences: Preference[];
   location?: GeoCoords;
   insurance?: InsuranceDetails;
+  identityDocument?: IdentityDocument;
   createdAt: string;
 }
 
