@@ -28,6 +28,7 @@ import { QRCode } from "@/components/common/qr-code";
 import { cn, formatCurrency, formatTime } from "@/lib/utils";
 import { useVibeStore } from "@/lib/store";
 import { PollCard, PollComposer } from "@/components/features/group-poll";
+import { useChatRealtime } from "@/hooks/use-chat-realtime";
 import type { PlaceCard, TripGroup, User } from "@/lib/types";
 
 interface ChatInterfaceProps {
@@ -49,23 +50,39 @@ export function ChatInterface({
   const [showPoll, setShowPoll] = React.useState(false);
   const scrollRef = React.useRef<HTMLDivElement>(null);
 
+  const userName = `${user.firstName} ${user.lastName}`;
+  const { messages: rtMessages, status: rtStatus, sendMessage: rtSend, enabled: rtEnabled } =
+    useChatRealtime(group.id, user.id, userName, user.avatarDataUrl);
+
+  const allMessages = React.useMemo(() => {
+    if (!rtEnabled) return group.messages;
+    const map = new Map<string, (typeof group.messages)[0]>();
+    for (const m of group.messages) map.set(m.id, m);
+    for (const m of rtMessages) map.set(m.id, m);
+    return [...map.values()].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  }, [rtEnabled, group.messages, rtMessages]);
+
   React.useEffect(() => {
     scrollRef.current?.scrollTo({
       top: scrollRef.current.scrollHeight,
       behavior: "smooth",
     });
-  }, [group.messages.length]);
+  }, [allMessages.length]);
 
   const send = () => {
     const text = draft.trim();
     if (!text) return;
-    addMessage(group.id, {
-      authorId: user.id,
-      authorName: `${user.firstName} ${user.lastName}`,
-      authorAvatar: user.avatarDataUrl,
-      content: text,
-      kind: "text",
-    });
+    if (rtEnabled) {
+      rtSend(text, "text");
+    } else {
+      addMessage(group.id, {
+        authorId: user.id,
+        authorName: userName,
+        authorAvatar: user.avatarDataUrl,
+        content: text,
+        kind: "text",
+      });
+    }
     setDraft("");
   };
 
@@ -86,6 +103,23 @@ export function ChatInterface({
             <Badge variant="secondary" className="shrink-0">
               <Users className="h-3 w-3" /> {group.members.length}
             </Badge>
+            {rtEnabled && (
+              <span
+                title={
+                  rtStatus === "connected"
+                    ? "Live"
+                    : rtStatus === "connecting"
+                    ? "Connecting…"
+                    : "Offline"
+                }
+                className={cn(
+                  "h-2 w-2 shrink-0 rounded-full",
+                  rtStatus === "connected" && "bg-green-500",
+                  rtStatus === "connecting" && "animate-pulse bg-yellow-400",
+                  rtStatus === "error" && "bg-red-500"
+                )}
+              />
+            )}
           </div>
 
           {/* Member avatar strip */}
@@ -167,7 +201,7 @@ export function ChatInterface({
         ref={scrollRef}
         className="flex-1 space-y-3 overflow-y-auto p-4 sm:p-6 scrollbar-hide"
       >
-        {group.messages.length === 0 && (
+        {allMessages.length === 0 && (
           <div className="mx-auto max-w-md rounded-3xl border border-dashed border-border/60 bg-card/60 p-6 text-center backdrop-blur-xl">
             <Sparkles className="mx-auto h-6 w-6 text-accent" />
             <h3 className="mt-2 text-sm font-semibold">
@@ -180,7 +214,7 @@ export function ChatInterface({
           </div>
         )}
 
-        {group.messages.map((m) => {
+        {allMessages.map((m) => {
           const isMine = m.authorId === user.id;
 
           /* ── Poll bubble ── */
