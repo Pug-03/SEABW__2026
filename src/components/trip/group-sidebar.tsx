@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ChevronLeft, Plus, QrCode, Users } from "lucide-react";
+import { AlertTriangle, ChevronLeft, Plus, QrCode, Trash2, Users } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -29,6 +29,7 @@ export function GroupSidebar({ collapsed, onToggleCollapse }: GroupSidebarProps)
   const activeGroupId = useVibeStore((s) => s.activeGroupId);
   const setActiveGroup = useVibeStore((s) => s.setActiveGroup);
   const createGroup = useVibeStore((s) => s.createGroup);
+  const deleteGroup = useVibeStore((s) => s.deleteGroup);
   const [newName, setNewName] = React.useState("");
 
   return (
@@ -107,6 +108,7 @@ export function GroupSidebar({ collapsed, onToggleCollapse }: GroupSidebarProps)
             active={g.id === activeGroupId}
             collapsed={collapsed}
             onClick={() => setActiveGroup(g.id)}
+            onDelete={() => deleteGroup(g.id)}
           />
         ))}
         {groups.length === 0 && !collapsed && (
@@ -121,47 +123,115 @@ export function GroupSidebar({ collapsed, onToggleCollapse }: GroupSidebarProps)
   );
 }
 
-function GroupRow({
-  group,
-  active,
-  collapsed,
-  onClick,
-}: {
+// ─── Trip row ────────────────────────────────────────────────────────────────
+
+interface GroupRowProps {
   group: TripGroup;
   active: boolean;
   collapsed: boolean;
   onClick: () => void;
-}) {
+  onDelete: () => void;
+}
+
+function GroupRow({ group, active, collapsed, onClick, onDelete }: GroupRowProps) {
+  const [confirmOpen, setConfirmOpen] = React.useState(false);
+
   return (
-    <button
-      onClick={onClick}
-      className={cn(
-        "flex w-full items-center gap-3 rounded-2xl px-2.5 py-2 text-left transition-colors",
-        active
-          ? "bg-accent/15 text-foreground"
-          : "text-muted-foreground hover:bg-secondary"
-      )}
-    >
-      <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-xs font-semibold text-white">
-        {group.name.slice(0, 2).toUpperCase()}
-      </div>
-      {!collapsed && (
-        <div className="min-w-0 flex-1">
-          <div className="truncate text-sm font-medium text-foreground">
-            {group.name}
-          </div>
-          <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
-            <Users className="h-3 w-3" />
-            {group.members.length}
-            {group.messages.length > 0 && (
-              <span className="ml-1">· {group.messages.length} msgs</span>
-            )}
-          </div>
+    <div className="group/row relative">
+      {/* Main row button */}
+      <button
+        onClick={onClick}
+        className={cn(
+          "flex w-full items-center gap-3 rounded-2xl px-2.5 py-2 text-left transition-colors",
+          active
+            ? "bg-accent/15 text-foreground"
+            : "text-muted-foreground hover:bg-secondary",
+          !collapsed && "pr-9"   /* leave room for the delete icon */
+        )}
+      >
+        <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-xs font-semibold text-white">
+          {group.name.replace(/[^\p{L}\p{N}]/gu, "").slice(0, 2).toUpperCase() || "T"}
         </div>
+        {!collapsed && (
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-sm font-medium text-foreground">
+              {group.name}
+            </div>
+            <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+              <Users className="h-3 w-3" />
+              {group.members.length}
+              {group.messages.length > 0 && (
+                <span className="ml-1">· {group.messages.length} msgs</span>
+              )}
+            </div>
+          </div>
+        )}
+      </button>
+
+      {/* Delete button — shown on hover (desktop) or always visible (touch) */}
+      {!collapsed && (
+        <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+          <DialogTrigger asChild>
+            <button
+              type="button"
+              aria-label={`Delete ${group.name}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                setConfirmOpen(true);
+              }}
+              className={cn(
+                "absolute right-2 top-1/2 -translate-y-1/2 grid h-7 w-7 place-items-center rounded-lg",
+                "text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive",
+                "opacity-0 focus:opacity-100 group-hover/row:opacity-100",
+                /* Always visible on touch devices */
+                "[@media(hover:none)]:opacity-60"
+              )}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </DialogTrigger>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-destructive" />
+                Delete trip
+              </DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete{" "}
+                <span className="font-semibold text-foreground">
+                  {group.name}
+                </span>
+                ? This will permanently remove all chat messages, expenses, and
+                shared places. This cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => setConfirmOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                className="flex-1"
+                onClick={() => {
+                  setConfirmOpen(false);
+                  onDelete();
+                }}
+              >
+                <Trash2 className="h-4 w-4" /> Delete trip
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
-    </button>
+    </div>
   );
 }
+
+// ─── Invite footer ────────────────────────────────────────────────────────────
 
 function SidebarInviteFooter() {
   const groups = useVibeStore((s) => s.groups);

@@ -226,7 +226,7 @@ export function ChatInterface({
                       {m.authorName}
                     </div>
                   )}
-                  <PlaceCardBubble placeCard={m.placeCard} />
+                  <PlaceCardBubble placeCard={m.placeCard} content={m.content} isMine={isMine} />
                   <div
                     className={cn(
                       "mt-0.5 text-[10px] opacity-70",
@@ -338,42 +338,69 @@ export function ChatInterface({
 }
 
 /* ── Place card rendered inside a chat bubble ── */
-function PlaceCardBubble({ placeCard }: { placeCard: PlaceCard }) {
+function PlaceCardBubble({
+  placeCard,
+  content,
+  isMine,
+}: {
+  placeCard: PlaceCard;
+  content: string;
+  isMine: boolean;
+}) {
+  const hasCaption = content && content !== placeCard.name;
+
   return (
-    <div className="w-64 overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={placeCard.imageUrl}
-        alt={placeCard.name}
-        className="h-32 w-full object-cover"
-      />
-      <div className="p-3 space-y-1.5">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <div className="truncate text-sm font-semibold leading-snug">
-              {placeCard.name}
+    <div className="space-y-1">
+      {/* Card */}
+      <div className="w-64 overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={placeCard.imageUrl}
+          alt={placeCard.name}
+          className="h-32 w-full object-cover"
+        />
+        <div className="space-y-1.5 p-3">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <div className="truncate text-sm font-semibold leading-snug">
+                {placeCard.name}
+              </div>
+              <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                <MapPin className="h-3 w-3 shrink-0" />
+                <span className="line-clamp-1">{placeCard.subtitle}</span>
+              </div>
             </div>
-            <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
-              <MapPin className="h-3 w-3 shrink-0" />
-              <span className="line-clamp-1">{placeCard.subtitle}</span>
-            </div>
+            {placeCard.rating != null && (
+              <span className="flex shrink-0 items-center gap-0.5 text-xs font-medium">
+                <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                {placeCard.rating}
+              </span>
+            )}
           </div>
-          {placeCard.rating != null && (
-            <span className="flex shrink-0 items-center gap-0.5 text-xs font-medium">
-              <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-              {placeCard.rating}
-            </span>
+          {placeCard.price != null && (
+            <div className="text-xs font-medium text-accent">
+              {formatCurrency(placeCard.price)} / night
+            </div>
           )}
+          <Badge variant="secondary" className="text-[10px]">
+            {placeCard.type === "accommodation" ? "🏨 Stay" : "🗺️ Destination"}
+          </Badge>
         </div>
-        {placeCard.price != null && (
-          <div className="text-xs font-medium text-accent">
-            {formatCurrency(placeCard.price)} / night
-          </div>
-        )}
-        <Badge variant="secondary" className="text-[10px]">
-          {placeCard.type === "accommodation" ? "🏨 Stay" : "🗺️ Destination"}
-        </Badge>
       </div>
+
+      {/* Caption text (the sender's own message that accompanied the share) */}
+      {hasCaption && (
+        <div
+          className={cn(
+            "w-64 rounded-2xl px-3.5 py-2 text-sm shadow-sm",
+            isMine
+              ? "rounded-br-md bg-accent text-accent-foreground"
+              : "rounded-bl-md border border-border/60 bg-card"
+          )}
+        >
+          {content}
+        </div>
+      )}
     </div>
   );
 }

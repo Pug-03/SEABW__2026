@@ -23,12 +23,12 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="min-h-screen bg-background font-sans">
-        <ThemeProvider>
-          <div className="relative isolate min-h-screen">
-            <div className="fixed inset-0 -z-10 gradient-mesh opacity-60 dark:opacity-30" />
+        <div className="relative isolate min-h-screen">
+          <div className="fixed inset-0 -z-10 gradient-mesh opacity-60 dark:opacity-30" />
+          <ThemeProvider>
             {children}
-          </div>
-        </ThemeProvider>
+          </ThemeProvider>
+        </div>
       </body>
     </html>
   );

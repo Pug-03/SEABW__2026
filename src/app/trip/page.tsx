@@ -44,6 +44,8 @@ export default function TripPage() {
   const groups = useVibeStore((s) => s.groups);
   const activeGroupId = useVibeStore((s) => s.activeGroupId);
   const createGroup = useVibeStore((s) => s.createGroup);
+  const createDemoGroup = useVibeStore((s) => s.createDemoGroup);
+  const demoSeeded = useVibeStore((s) => s.demoSeeded);
   const setGroupDestination = useVibeStore((s) => s.setGroupDestination);
   const geo = useGeolocation(false);
 
@@ -58,8 +60,10 @@ export default function TripPage() {
   }, [hydrated, user, router]);
 
   React.useEffect(() => {
-    if (hydrated && user && groups.length === 0) setShowFirstTrip(true);
-  }, [hydrated, user, groups.length]);
+    if (hydrated && user && groups.length === 0 && !demoSeeded) {
+      createDemoGroup(user);
+    }
+  }, [hydrated, user, groups.length, demoSeeded, createDemoGroup]);
 
   // Close mobile drawer when viewport resizes to desktop so we never leave
   // a stuck overlay behind.
