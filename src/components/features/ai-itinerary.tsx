@@ -173,8 +173,8 @@ function TripTimeline({ itinerary, source, members }: TripTimelineProps) {
             <div className="absolute -left-[27px] top-0 grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-xs font-semibold text-white shadow-lg">
               D{day.day}
             </div>
-            <div className="flex items-center gap-2">
-              <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+            <div className="flex items-center gap-2 pl-3">
+              <Calendar className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
               <h4 className="text-sm font-semibold tracking-tight">
                 {day.title}
               </h4>

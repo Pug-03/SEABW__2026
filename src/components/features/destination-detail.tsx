@@ -71,8 +71,15 @@ export function DestinationDetail({
       authorId: user.id,
       authorName: `${user.firstName} ${user.lastName}`,
       authorAvatar: user.avatarDataUrl,
-      content: `🗺️ *${destination.title}, ${destination.region}*\n${destination.tags.join(" · ")} · ${PRICE_SYMBOLS[destination.priceLevel]} · Best in ${SEASON_LABELS[destination.season]}`,
-      kind: "text",
+      content: `${destination.title}, ${destination.region}`,
+      kind: "place",
+      placeCard: {
+        type: "destination",
+        id: destination.id,
+        name: `${destination.title}, ${destination.region}`,
+        imageUrl: destination.imageUrl,
+        subtitle: destination.tags.join(" · "),
+      },
     });
     setShared(true);
     setTimeout(() => setShared(false), 2000);

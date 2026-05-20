@@ -70,6 +70,16 @@ export interface Accommodation {
   cancellationPolicy: string;
 }
 
+export interface PlaceCard {
+  type: "destination" | "accommodation";
+  id: string;
+  name: string;
+  imageUrl: string;
+  subtitle: string;
+  price?: number;
+  rating?: number;
+}
+
 export interface ChatMessage {
   id: string;
   groupId: string;
@@ -77,8 +87,9 @@ export interface ChatMessage {
   authorName: string;
   authorAvatar?: string;
   content: string;
-  kind: "text" | "poll" | "system";
+  kind: "text" | "poll" | "system" | "place";
   pollId?: string;
+  placeCard?: PlaceCard;
   createdAt: string;
 }
 

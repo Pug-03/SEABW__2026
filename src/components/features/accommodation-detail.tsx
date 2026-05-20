@@ -83,8 +83,17 @@ export function AccommodationDetail({
       authorId: user.id,
       authorName: `${user.firstName} ${user.lastName}`,
       authorAvatar: user.avatarDataUrl,
-      content: `📍 *${accommodation.name}*\n${accommodation.address}\n💰 ${formatCurrency(accommodation.pricePerNight)}/night · ⭐ ${accommodation.rating} (${accommodation.reviewCount.toLocaleString()} reviews)`,
-      kind: "text",
+      content: accommodation.name,
+      kind: "place",
+      placeCard: {
+        type: "accommodation",
+        id: accommodation.id,
+        name: accommodation.name,
+        imageUrl: accommodation.imageUrl,
+        subtitle: accommodation.address,
+        price: accommodation.pricePerNight,
+        rating: accommodation.rating,
+      },
     });
     setShared(true);
     setTimeout(() => setShared(false), 2000);
@@ -250,23 +259,22 @@ export function AccommodationDetail({
               {activeGroup && (
                 <Button
                   variant="glass"
-                  size="sm"
-                  className="flex-1 sm:flex-none"
+                  className="h-10 flex-1 gap-1.5 text-sm"
                   onClick={shareToChat}
                 >
                   {shared ? (
-                    <><Check className="h-3.5 w-3.5" /> Shared!</>
+                    <><Check className="h-4 w-4" /> Shared!</>
                   ) : (
-                    <><MessageSquare className="h-3.5 w-3.5" /> Share to Chat</>
+                    <><MessageSquare className="h-4 w-4" /> Share to Chat</>
                   )}
                 </Button>
               )}
-              <Button variant="glass" className="flex-1" asChild>
+              <Button variant="glass" className="h-10 flex-1 gap-1.5 text-sm" asChild>
                 <a href={mapsUrl} target="_blank" rel="noreferrer">
                   <Navigation className="h-4 w-4" /> Directions
                 </a>
               </Button>
-              <Button variant="accent" size="lg" className="flex-1">
+              <Button variant="accent" className="h-10 flex-1 gap-1.5 text-sm">
                 Book Now
               </Button>
             </div>
