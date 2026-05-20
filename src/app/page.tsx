@@ -11,7 +11,9 @@ import { RegistrationForm } from "@/components/auth/registration-form";
 import { LoginForm } from "@/components/auth/login-form";
 import { PreferenceGrid } from "@/components/auth/preference-grid";
 import { ProfileCreation } from "@/components/auth/profile-creation";
+import { Splash } from "@/components/common/splash";
 import { useGeolocation } from "@/hooks/use-geolocation";
+import { useStoreHydrated } from "@/hooks/use-store-hydrated";
 import { useVibeStore } from "@/lib/store";
 import type { User } from "@/lib/types";
 import { generateId } from "@/lib/utils";
@@ -20,14 +22,19 @@ type Step = "auth" | "preferences" | "profile";
 
 export default function AuthPage() {
   const router = useRouter();
+  const hydrated = useStoreHydrated();
   const geo = useGeolocation(true);
   const user = useVibeStore((s) => s.user);
   const setUser = useVibeStore((s) => s.setUser);
   const updateUser = useVibeStore((s) => s.updateUser);
   const togglePreference = useVibeStore((s) => s.togglePreference);
 
-  const [step, setStep] = React.useState<Step>(user ? "profile" : "auth");
+  const [step, setStep] = React.useState<Step>("auth");
   const [mode, setMode] = React.useState<"register" | "login">("register");
+
+  React.useEffect(() => {
+    if (hydrated && user) setStep("profile");
+  }, [hydrated, user]);
 
   React.useEffect(() => {
     if (geo.coords && user && !user.location) {
@@ -65,6 +72,8 @@ export default function AuthPage() {
     typeof window !== "undefined"
       ? `${window.location.origin}/trip?invite=${inviteCode}`
       : `https://vibetrip.app/trip?invite=${inviteCode}`;
+
+  if (!hydrated) return <Splash />;
 
   return (
     <main className="relative mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 py-6 sm:px-6 sm:py-10">

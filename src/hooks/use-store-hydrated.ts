@@ -4,10 +4,7 @@ import * as React from "react";
 import { useVibeStore } from "@/lib/store";
 
 export function useStoreHydrated(): boolean {
-  const [hydrated, setHydrated] = React.useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    return useVibeStore.persist.hasHydrated();
-  });
+  const [hydrated, setHydrated] = React.useState(false);
 
   React.useEffect(() => {
     if (useVibeStore.persist.hasHydrated()) {

@@ -96,7 +96,7 @@ export function AIRecommendationsCard({
           </Badge>
         </div>
       )}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid auto-rows-fr gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {ranked.map(({ accommodation, reasons, withinBudget }, idx) => (
           <AccommodationCard
             key={accommodation.id}
@@ -147,7 +147,7 @@ function AccommodationCard({
           onOpen();
         }
       }}
-      className="group cursor-pointer overflow-hidden outline-none transition-shadow hover:shadow-xl focus-visible:ring-2 focus-visible:ring-ring"
+      className="group flex h-full cursor-pointer flex-col overflow-hidden outline-none transition-shadow hover:shadow-xl focus-visible:ring-2 focus-visible:ring-ring"
     >
       <div className="relative h-32 w-full overflow-hidden">
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -169,7 +169,7 @@ function AccommodationCard({
           {a.rating}
         </div>
       </div>
-      <CardContent className="space-y-2 p-3">
+      <CardContent className="flex flex-1 flex-col p-3">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <div className="truncate text-sm font-semibold tracking-tight">
@@ -186,16 +186,18 @@ function AccommodationCard({
           </div>
           <BedDouble className="h-4 w-4 shrink-0 text-muted-foreground" />
         </div>
-        {reasons.length > 0 && (
-          <p className="line-clamp-2 text-[11px] text-muted-foreground">
+        {reasons.length > 0 ? (
+          <p className="mt-2 line-clamp-2 min-h-9 text-[11px] leading-4 text-muted-foreground">
             {reasons.join(" · ")}
           </p>
+        ) : (
+          <div className="mt-2 min-h-9" aria-hidden />
         )}
-        <div className="flex gap-2">
+        <div className="mt-auto grid grid-cols-2 items-end gap-2 pt-3">
           <Button
             variant="ghost"
             size="sm"
-            className="flex-1"
+            className="h-11 w-full"
             onClick={(e) => {
               e.stopPropagation();
               onOpen();
@@ -206,7 +208,7 @@ function AccommodationCard({
           <Button
             variant="accent"
             size="sm"
-            className="flex-1"
+            className="h-11 w-full"
             onClick={(e) => {
               e.stopPropagation();
               onOpen();
