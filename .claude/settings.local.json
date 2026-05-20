@@ -17,7 +17,9 @@
       "PowerShell($r1 = \\(Invoke-WebRequest http://localhost:3005/ -UseBasicParsing\\).StatusCode; \"/=$r1\")",
       "Bash(pnpm add *)",
       "Bash(pnpm typecheck *)",
-      "Bash(pnpm build *)"
+      "Bash(pnpm build *)",
+      "Bash(npx tsc *)",
+      "Bash(Test-Path *)"
     ]
   }
 }

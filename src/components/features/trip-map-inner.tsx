@@ -57,10 +57,11 @@ export default function TripMapInner({ origin, destination, poiFilter }: TripMap
     ? [origin.lat, origin.lng]
     : null;
 
-  const allPoints: [number, number][] = [
-    ...(originPos ? [originPos] : []),
-    destPos,
-  ];
+  const allPoints = React.useMemo<[number, number][]>(
+    () => [...(originPos ? [originPos] : []), destPos],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [originPos?.[0], originPos?.[1], destPos[0], destPos[1]]
+  );
 
   const visibleFacilities = SOS_FACILITIES.filter(
     (f) => poiFilter === "all" || f.type === poiFilter

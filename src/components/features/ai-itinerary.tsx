@@ -167,13 +167,13 @@ function TripTimeline({ itinerary, source, members }: TripTimelineProps) {
         </div>
       </div>
 
-      <ol className="relative space-y-6 border-l border-border/60 pl-5">
+      <ol className="relative space-y-6 border-l border-border/60 pl-7">
         {itinerary.days.map((day) => (
           <li key={day.day} className="relative">
             <div className="absolute -left-[27px] top-0 grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-xs font-semibold text-white shadow-lg">
               D{day.day}
             </div>
-            <div className="flex items-center gap-2 pl-3">
+            <div className="flex min-w-0 items-start gap-2 pl-4">
               <Calendar className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
               <h4 className="text-sm font-semibold tracking-tight">
                 {day.title}

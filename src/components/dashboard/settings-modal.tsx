@@ -53,6 +53,25 @@ function ToggleRow({ icon, title, description, defaultChecked }: ToggleRowProps)
 }
 
 export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
+  const [currentPw, setCurrentPw] = React.useState("");
+  const [newPw, setNewPw] = React.useState("");
+  const [pwMsg, setPwMsg] = React.useState<{ ok: boolean; text: string } | null>(null);
+
+  const updateCredentials = () => {
+    if (!currentPw || !newPw) {
+      setPwMsg({ ok: false, text: "Both fields are required." });
+      return;
+    }
+    if (newPw.length < 8) {
+      setPwMsg({ ok: false, text: "New password must be at least 8 characters." });
+      return;
+    }
+    setCurrentPw("");
+    setNewPw("");
+    setPwMsg({ ok: true, text: "Password updated!" });
+    setTimeout(() => setPwMsg(null), 2500);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
@@ -111,13 +130,28 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
           <div className="grid gap-2">
             <div>
               <Label className="text-xs">Current password</Label>
-              <Input type="password" placeholder="••••••••" />
+              <Input
+                type="password"
+                placeholder="••••••••"
+                value={currentPw}
+                onChange={(e) => setCurrentPw(e.target.value)}
+              />
             </div>
             <div>
               <Label className="text-xs">New password</Label>
-              <Input type="password" placeholder="••••••••" />
+              <Input
+                type="password"
+                placeholder="••••••••"
+                value={newPw}
+                onChange={(e) => setNewPw(e.target.value)}
+              />
             </div>
-            <Button variant="accent" size="sm" className="mt-1 w-full">
+            {pwMsg && (
+              <p className={`text-xs ${pwMsg.ok ? "text-green-500" : "text-destructive"}`}>
+                {pwMsg.text}
+              </p>
+            )}
+            <Button variant="accent" size="sm" className="mt-1 w-full" onClick={updateCredentials}>
               Update credentials
             </Button>
           </div>

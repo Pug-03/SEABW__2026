@@ -248,7 +248,7 @@ function SidebarInviteFooter() {
       <Dialog>
         <DialogTrigger asChild>
           <Button variant="glass" size="sm" className="w-full">
-            <QrCode className="h-4 w-4" /> Invite to "{active.name}"
+            <QrCode className="h-4 w-4" /> {`Invite to "${active.name}"`}
           </Button>
         </DialogTrigger>
         <DialogContent className="max-w-sm">

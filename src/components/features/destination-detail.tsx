@@ -30,6 +30,7 @@ interface DestinationDetailProps {
   destination: Destination | null;
   open: boolean;
   onOpenChange: (v: boolean) => void;
+  onSelectStay?: (accommodationId: string) => void;
 }
 
 const PRICE_SYMBOLS = ["", "฿", "฿฿", "฿฿฿"] as const;
@@ -45,6 +46,7 @@ export function DestinationDetail({
   destination,
   open,
   onOpenChange,
+  onSelectStay,
 }: DestinationDetailProps) {
   const router = useRouter();
   const [shared, setShared] = React.useState(false);
@@ -148,9 +150,16 @@ export function DestinationDetail({
               </div>
               <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                 {stays.map((a) => (
-                  <div
+                  <button
                     key={a.id}
-                    className="overflow-hidden rounded-2xl border border-border/60 bg-secondary/30"
+                    onClick={() => {
+                      if (onSelectStay) {
+                        onOpenChange(false);
+                        onSelectStay(a.id);
+                      }
+                    }}
+                    className="overflow-hidden rounded-2xl border border-border/60 bg-secondary/30 text-left transition-colors hover:border-accent/50 hover:bg-secondary/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none"
+                    disabled={!onSelectStay}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
@@ -169,7 +178,7 @@ export function DestinationDetail({
                         {formatCurrency(a.pricePerNight)}/night
                       </div>
                     </div>
-                  </div>
+                  </button>
                 ))}
               </div>
             </div>

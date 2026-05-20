@@ -48,7 +48,7 @@ export function ProfileCreation({
     <div className="space-y-6">
       <div className="text-center">
         <div className="mx-auto mb-1 inline-flex items-center gap-1.5 rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-xs font-medium text-accent">
-          <Sparkles className="h-3 w-3" /> You're all set
+          <Sparkles className="h-3 w-3" /> {"You're"} all set
         </div>
         <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
           Welcome, {user.nickname}
@@ -129,14 +129,14 @@ export function ProfileCreation({
             <Button
               variant="glass"
               onClick={share}
-              className="w-full min-w-0 whitespace-nowrap px-5 sm:w-auto sm:flex-1"
+              className="w-full sm:flex-1"
             >
               <Share2 className="h-4 w-4" /> Share invite
             </Button>
             <Button
               variant="accent"
               onClick={onContinue}
-              className="mx-auto w-fit min-w-0 max-w-full whitespace-nowrap px-6 sm:mx-0 sm:w-auto sm:flex-1"
+              className="w-full sm:flex-1"
             >
               <Users className="h-4 w-4" /> Go to dashboard
             </Button>

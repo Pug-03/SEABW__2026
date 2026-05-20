@@ -763,7 +763,7 @@ function InsuranceSelector({
       {skipped && (
         <p className="text-[11px] text-muted-foreground">
           You can add insurance later from your profile. Your SOS card will show
-          a "no insurance on file" warning.
+          a &quot;no insurance on file&quot; warning.
         </p>
       )}
     </div>

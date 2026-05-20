@@ -140,10 +140,10 @@ function NoResults({
       </div>
       <div>
         <div className="text-base font-medium">
-          No results found for "{query}"
+          No results found for &quot;{query}&quot;
         </div>
         <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-          Try a city, region, or vibe like "beach", "mountain", or "foodie".
+          Try a city, region, or vibe like &quot;beach&quot;, &quot;mountain&quot;, or &quot;foodie&quot;.
         </p>
       </div>
       {onClear && (

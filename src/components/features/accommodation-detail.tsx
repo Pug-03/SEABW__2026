@@ -255,11 +255,11 @@ export function AccommodationDetail({
                 </span>
               </div>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="grid w-full grid-cols-1 gap-2 sm:w-auto sm:grid-cols-3">
               {activeGroup && (
                 <Button
                   variant="glass"
-                  className="h-10 flex-1 gap-1.5 text-sm"
+                  className="h-11 w-full gap-1.5 text-sm"
                   onClick={shareToChat}
                 >
                   {shared ? (
@@ -269,13 +269,23 @@ export function AccommodationDetail({
                   )}
                 </Button>
               )}
-              <Button variant="glass" className="h-10 flex-1 gap-1.5 text-sm" asChild>
+              <Button variant="glass" className="h-11 w-full gap-1.5 text-sm" asChild>
                 <a href={mapsUrl} target="_blank" rel="noreferrer">
                   <Navigation className="h-4 w-4" /> Directions
                 </a>
               </Button>
-              <Button variant="accent" className="h-10 flex-1 gap-1.5 text-sm">
-                Book Now
+              <Button
+                variant="accent"
+                className="h-11 w-full gap-1.5 text-sm"
+                asChild
+              >
+                <a
+                  href={`https://www.google.com/travel/hotels/entity/${encodeURIComponent(accommodation.name)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <ExternalLink className="h-4 w-4" /> Book Now
+                </a>
               </Button>
             </div>
           </div>

@@ -116,7 +116,7 @@ export default function AuthPage() {
                   How do you vibe?
                 </h2>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Pick the kinds of trips you love — multi-select. We'll use
+                  Pick the kinds of trips you love — multi-select. {"We'll"} use
                   these to power AI recommendations.
                 </p>
               </div>

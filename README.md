@@ -1,149 +1,107 @@
-# VibeTrip
+# SEABW 2026 — Travel Planning Web App
 
-A modern, Apple-style group-travel companion built for the SEABW 2026 hackathon. Plan, split, and vibe with your crew — register, pick preferences, create trip groups, chat in real time (mocked), split the bill with PromptPay QR, and generate AI itineraries.
+## Overview
 
----
+SEABW 2026 is a mobile-first travel planning web app for group trips. Travelers can register, choose trip preferences, search destinations, create trip groups, chat with members, share place cards, split bills with QR codes, generate an AI trip plan, and navigate with nearby POI markers.
 
-## Tech stack
+The app runs fully in local demo mode by default. Optional Anthropic and Supabase credentials enable live AI itinerary generation and realtime chat sync.
 
-- **Framework**: [Next.js 14](https://nextjs.org/) (App Router) + TypeScript
-- **Styling**: Tailwind CSS + custom CSS variables (light & dark mode)
-- **UI primitives**: Shadcn-style components built on [Radix UI](https://www.radix-ui.com/) (Dialog, Tabs, Avatar, Switch, Label, Progress)
-- **Icons**: [`lucide-react`](https://lucide.dev/)
-- **State**: [Zustand](https://github.com/pmndrs/zustand) with `persist` middleware (localStorage)
-- **QR codes**: [`qrcode.react`](https://github.com/zpao/qrcode.react)
-- **AI** (optional): Anthropic Claude (`claude-haiku-4-5-20251001`) via `/api/ai/itinerary` — falls back to a structured mock if no API key is configured
+## Tech Stack
 
----
+| Layer | Technology |
+| --- | --- |
+| Framework | Next.js 14 App Router, React 18, TypeScript |
+| Styling | Tailwind CSS, CSS variables, responsive mobile-first layouts |
+| UI primitives | Radix UI Dialog, Tabs, Avatar, Label, Progress, Switch |
+| Icons | lucide-react |
+| State management | Zustand with persisted localStorage state |
+| Maps | Leaflet.js, react-leaflet, OpenStreetMap tiles |
+| AI itinerary | Anthropic Claude API when `ANTHROPIC_API_KEY` is set, mock itinerary fallback otherwise |
+| Realtime chat | Supabase Realtime when public Supabase env vars are set, local Zustand chat otherwise |
+| QR codes | qrcode.react |
 
-## Getting started
+## Getting Started
 
-Requirements: **Node 18.17+** (Node 20 LTS recommended) and **pnpm** (or npm/yarn).
-
-### Install
+1. Clone the repository.
+2. Install dependencies:
 
 ```bash
-# with pnpm (recommended — used during development)
-pnpm install
-
-# or with npm
 npm install
 ```
 
-### Run the dev server
+3. Start the development server:
 
 ```bash
-pnpm dev
-# or
 npm run dev
 ```
 
-Open <http://localhost:3000>. If port 3000 is busy, Next.js will offer the next free port and print it to the console.
+4. Open `http://localhost:3000` in your browser.
 
-### Build for production
-
-```bash
-pnpm build
-pnpm start
-```
-
-### Other commands
+Useful checks:
 
 ```bash
-pnpm typecheck   # tsc --noEmit
-pnpm lint        # next lint
+npm run typecheck
+npm run lint
+npm run build
 ```
 
-### Optional: enable real AI itinerary
+Optional environment variables can be copied from `.env.local.example`:
 
-Create `.env.local` in the project root:
+| Variable | Purpose |
+| --- | --- |
+| `ANTHROPIC_API_KEY` | Enables real Claude-generated itineraries through `/api/ai/itinerary` |
+| `NEXT_PUBLIC_SUPABASE_URL` | Enables Supabase-backed realtime chat |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Required with the Supabase URL |
 
-```env
-ANTHROPIC_API_KEY=sk-ant-...
-```
+## Features
 
-Without a key, `/api/ai/itinerary` returns a deterministic mock plan — the UI is identical, just the source badge changes.
+- User registration with a 2-step flow: personal info, identity document, password, and travel insurance.
+- Login and welcome/profile completion flow with invite link and QR code.
+- Home/dashboard experience with destination search, trending destinations, weather, fuel estimate, recommendations, and bill splitter.
+- Trip management with create, view, active-trip switching, and delete confirmation.
+- Trip group chat with text messages, polls, invite QR code, and shared destination/accommodation cards.
+- Hotel and attraction detail modals with maps, share-to-chat, and booking links.
+- AI Trip Plan generator with day-by-day itinerary output and member responsibilities.
+- Navigation map powered by Leaflet.js with destination marker, route line, and POI markers for hospitals, police, and gas stations.
+- Quick-select POI filter buttons.
+- Expense manager, packing checklist, photo wall, and SOS widget.
+- Fully responsive mobile-first layout with 360px+ support and 44px minimum button targets.
 
----
-
-## Main features
-
-1. **Authentication & onboarding**
-   - Browser geolocation prompt on first load
-   - Registration with phone, email, name, nickname, address, password (+ confirm validation)
-   - Drag-and-drop profile picture upload
-   - Toggleable register / login forms
-   - **Bento preference grid** — multi-select trip vibes (Beach, Mountain, Waterfall, City, Camping, Island, Culture, Foodie)
-   - Profile-creation step with **invite link + scannable QR**
-   - Optional **travel insurance** fields (provider, policy number, emergency contact)
-
-2. **Main dashboard**
-   - Glass top navbar — settings on the far left, profile avatar on the far right
-   - Centered **smart search bar** with submit-driven destination filtering and a "No results" state
-   - **Auto-scrolling seasonal carousel** (15 destinations, 5 visible on desktop, seamless infinite loop, hover-to-pause)
-   - **Profile modal** with edit-flow password re-verification
-   - **Settings modal** (privacy, push notifications, 2FA, biometric, language, change password)
-
-3. **Trip hub (group chat & collaboration)**
-   - **Infinite group creation** with per-group QR invite codes
-   - Clean chat interface (text + system + poll messages)
-   - **Expense Manager** sidebar — total budget + progress bar + per-member expenses
-   - **Split Bill** calculator with PromptPay-style QR code
-   - **Accommodation recommendations** with "Book Now" + detail modal (address, coords, distance from you, amenities, check-in / check-out)
-
-4. **AI & utilities**
-   - **AI Itinerary** — 3D/2N timeline with day blocks, activities, costs, and responsible-member chips. Backed by Anthropic Claude when `ANTHROPIC_API_KEY` is set, mock otherwise.
-   - **Smart group polls** with live percentage bars
-   - **GPS + Fuel calculator** — haversine distance, ETA, fuel cost (configurable km/L and ฿/L)
-   - **Weather widget** — current + 5-day forecast
-   - **Packing checklist** — grouped by trip type (beach essentials, mountain gear, …)
-   - **Nearby SOS** — hospitals / police / gas with mock phone numbers and distances
-   - **Trip Memory photo wall** — drag-and-drop CSS-grid scrapbook with captions
-   - **AI recommendation engine** — scores stays against the user's preferences + the group's remaining budget; shows an "AI Recommended for you" badge with a reason
-   - **Travel insurance integration** — when SOS is activated, the user's insurance card (provider, policy, emergency contact, mock barcode) is displayed prominently
-
----
-
-## Pages & routes
+## Pages & Routes
 
 | Route | Purpose |
 | --- | --- |
-| `/` | Authentication & onboarding (register, login, preferences bento, profile creation with invite QR) |
-| `/dashboard` | Main dashboard — smart search, seasonal carousel, AI recommendations, weather, GPS & fuel |
-| `/trip` | Trip hub — group sidebar, chat, expense manager, split bill, AI itinerary, packing, SOS, photo wall |
-| `/api/ai/itinerary` | POST endpoint that generates a structured 3D/2N itinerary (Claude or mock) |
+| `/` | Login, sign up, preferences, and welcome/profile flow |
+| `/login` | Alias redirect to `/` |
+| `/register` | Alias redirect to `/` |
+| `/welcome` | Alias redirect to `/` |
+| `/dashboard` | Main home dashboard with search, trending cards, bill splitter, recommendations, weather, and destination details |
+| `/trip` | Trip hub with group sidebar, chat, expenses, AI plan, map, SOS, packing list, and photo wall |
+| `/trips` | Alias redirect to `/trip` |
+| `/trips/:id` | Alias redirect to `/trip` |
+| `/search` | Alias redirect to `/dashboard` |
+| `/place/:id` | Alias redirect to `/dashboard` |
+| `/navigate` | Alias redirect to `/trip` |
+| `/ai-plan` | Alias redirect to `/trip` |
+| `/api/ai/itinerary` | POST endpoint for itinerary generation |
 
----
+## Notes
 
-## Project structure
+- Mobile-first: optimized for 360px+ screen width.
+- Destination and accommodation images are loaded from Unsplash URLs.
+- Map tiles are provided by OpenStreetMap and require network access.
+- AI Trip Plan uses Anthropic Claude when configured; otherwise it returns a structured demo plan.
+- Realtime chat uses Supabase when configured; otherwise chat remains local to the browser.
+- PromptPay QR generation is currently demo-formatted and should be connected to a real merchant or PromptPay payload before production use.
 
+## Verification
+
+Latest audit checks run successfully:
+
+```bash
+npm run typecheck
+npm run lint
+npm run build
 ```
-src/
-├─ app/
-│  ├─ page.tsx              # /  — auth & onboarding
-│  ├─ dashboard/page.tsx    # /dashboard
-│  ├─ trip/
-│  │  ├─ page.tsx           # /trip
-│  │  └─ error.tsx          # /trip error boundary
-│  ├─ api/ai/itinerary/route.ts
-│  ├─ layout.tsx
-│  └─ globals.css
-├─ components/
-│  ├─ auth/                 # registration, login, preference grid, profile creation
-│  ├─ dashboard/            # navbar, smart search, carousel, profile/settings modals
-│  ├─ trip/                 # group sidebar, chat, expense manager (+ split bill)
-│  ├─ features/             # AI itinerary, recommendations, weather, GPS/fuel,
-│  │                         #   packing, SOS, polls, photo wall, hotel detail
-│  ├─ common/               # logo, theme toggle, splash, QR, avatar upload
-│  └─ ui/                   # shadcn-style primitives
-├─ hooks/                   # use-geolocation, use-store-hydrated
-└─ lib/                     # types, store (Zustand), mock-data, theme, utils
-```
 
----
-
-## Troubleshooting
-
-- **Stuck on the auth page after refreshing while logged in?** The store hydrates from `localStorage` via Zustand persist. The dashboard and trip routes wait for hydration before redirecting — see `src/hooks/use-store-hydrated.ts`.
-- **Geolocation never prompts?** Browsers only prompt once per origin. If you previously denied, re-enable via the address-bar site settings.
-- **Images don't load?** Destination & hotel imagery is sourced from `images.unsplash.com`. Network filters or offline mode may block them — placeholders should still render.
+The development server was also checked for the main routes and aliases. `/`, `/dashboard`, and `/trip` return `200`; alias routes redirect successfully.

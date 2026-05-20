@@ -60,7 +60,7 @@ export function ChatInterface({
     for (const m of group.messages) map.set(m.id, m);
     for (const m of rtMessages) map.set(m.id, m);
     return [...map.values()].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
-  }, [rtEnabled, group.messages, rtMessages]);
+  }, [rtEnabled, group, rtMessages]);
 
   React.useEffect(() => {
     scrollRef.current?.scrollTo({
@@ -72,8 +72,8 @@ export function ChatInterface({
   const send = () => {
     const text = draft.trim();
     if (!text) return;
-    if (rtEnabled) {
-      rtSend(text, "text");
+    if (rtEnabled && rtStatus === "connected") {
+      void rtSend(text, "text");
     } else {
       addMessage(group.id, {
         authorId: user.id,

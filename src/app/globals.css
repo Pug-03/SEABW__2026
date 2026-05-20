@@ -53,6 +53,14 @@
     @apply bg-background text-foreground antialiased;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  img,
+  svg,
+  video,
+  canvas {
+    max-width: 100%;
   }
 }
 
@@ -83,5 +91,14 @@
       radial-gradient(at 97% 21%, hsla(256, 98%, 72%, 0.18) 0px, transparent 50%),
       radial-gradient(at 52% 99%, hsla(354, 98%, 61%, 0.10) 0px, transparent 50%),
       radial-gradient(at 10% 29%, hsla(190, 100%, 50%, 0.10) 0px, transparent 50%);
+  }
+
+  .animate-marquee-x {
+    animation: marquee-x 28s linear infinite;
+  }
+
+  @keyframes marquee-x {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
   }
 }

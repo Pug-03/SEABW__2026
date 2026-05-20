@@ -16,11 +16,12 @@ import { GpsFuelCalculator } from "@/components/features/gps-fuel-calculator";
 import { AIRecommendationsCard } from "@/components/features/ai-recommendations";
 import { BillSplitter } from "@/components/features/bill-splitter";
 import { DestinationDetail } from "@/components/features/destination-detail";
+import { AccommodationDetail } from "@/components/features/accommodation-detail";
 import { Splash } from "@/components/common/splash";
 import { useVibeStore } from "@/lib/store";
 import { useGeolocation } from "@/hooks/use-geolocation";
 import { useStoreHydrated } from "@/hooks/use-store-hydrated";
-import { DESTINATIONS } from "@/lib/mock-data";
+import { ACCOMMODATIONS, DESTINATIONS } from "@/lib/mock-data";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -36,6 +37,7 @@ export default function DashboardPage() {
     DESTINATIONS[0].id
   );
   const [destDetailId, setDestDetailId] = React.useState<string | null>(null);
+  const [accomDetailId, setAccomDetailId] = React.useState<string | null>(null);
   const [searchQuery, setSearchQuery] = React.useState("");
   const resultsRef = React.useRef<HTMLDivElement>(null);
 
@@ -189,6 +191,13 @@ export default function DashboardPage() {
         destination={DESTINATIONS.find((d) => d.id === destDetailId) ?? null}
         open={!!destDetailId}
         onOpenChange={(v) => !v && setDestDetailId(null)}
+        onSelectStay={(id) => setAccomDetailId(id)}
+      />
+      <AccommodationDetail
+        accommodation={ACCOMMODATIONS.find((a) => a.id === accomDetailId) ?? null}
+        open={!!accomDetailId}
+        onOpenChange={(v) => !v && setAccomDetailId(null)}
+        origin={geo.coords}
       />
     </main>
   );

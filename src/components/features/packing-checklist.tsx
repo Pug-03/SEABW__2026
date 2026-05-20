@@ -13,7 +13,10 @@ interface PackingChecklistProps {
 }
 
 export function PackingChecklist({ preferences }: PackingChecklistProps) {
-  const active = preferences.length ? preferences : (["beach"] as Preference[]);
+  const active = React.useMemo<Preference[]>(
+    () => (preferences.length ? preferences : ["beach"]),
+    [preferences]
+  );
   const [tab, setTab] = React.useState<Preference>(active[0]);
   const [checked, setChecked] = React.useState<Record<string, boolean>>({});
 
