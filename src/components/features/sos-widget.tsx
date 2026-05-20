@@ -3,8 +3,10 @@
 import * as React from "react";
 import {
   AlertTriangle,
+  CheckCircle2,
   Fuel,
   Hospital,
+  IdCard,
   Phone,
   ShieldCheck,
   Shield,
@@ -70,6 +72,27 @@ export function SosWidget({ user }: SosWidgetProps) {
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
+        <div className="grid grid-cols-3 gap-2">
+          <ReadinessStat
+            icon={<Phone className="h-3.5 w-3.5" />}
+            label="Emergency"
+            value="Ready"
+            good
+          />
+          <ReadinessStat
+            icon={<IdCard className="h-3.5 w-3.5" />}
+            label="Insurance"
+            value={user.insurance ? "On file" : "Missing"}
+            good={!!user.insurance}
+          />
+          <ReadinessStat
+            icon={<Hospital className="h-3.5 w-3.5" />}
+            label="Nearest"
+            value={`${SOS_FACILITIES[0]?.distanceKm ?? 0} km`}
+            good
+          />
+        </div>
+
         {active && user.insurance && (
           <InsuranceCard insurance={user.insurance} user={user} />
         )}
@@ -128,8 +151,56 @@ export function SosWidget({ user }: SosWidgetProps) {
             );
           })}
         </ul>
+
+        <div className="rounded-2xl border border-border/60 bg-secondary/30 p-3">
+          <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+            Quick safety card
+          </div>
+          <div className="grid gap-2 text-[11px] text-muted-foreground">
+            <div className="flex items-center justify-between gap-2">
+              <span>Share location with your group</span>
+              <Badge variant="secondary">Recommended</Badge>
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <span>Keep passport or ID accessible</span>
+              <Badge variant="secondary">Travel ready</Badge>
+            </div>
+          </div>
+        </div>
       </CardContent>
     </Card>
+  );
+}
+
+function ReadinessStat({
+  icon,
+  label,
+  value,
+  good,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  good: boolean;
+}) {
+  return (
+    <div className="rounded-2xl border border-border/60 bg-secondary/30 p-2.5">
+      <div
+        className={cn(
+          "mb-1 inline-flex h-7 w-7 items-center justify-center rounded-xl",
+          good
+            ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-300"
+            : "bg-amber-500/15 text-amber-700 dark:text-amber-300"
+        )}
+      >
+        {icon}
+      </div>
+      <div className="truncate text-[10px] uppercase tracking-wider text-muted-foreground">
+        {label}
+      </div>
+      <div className="truncate text-xs font-semibold">{value}</div>
+    </div>
   );
 }
 

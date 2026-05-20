@@ -75,7 +75,7 @@ export function WeatherWidget({ destination }: { destination: Destination }) {
   const Icon = ICONS[w.condition];
 
   return (
-    <Card className="overflow-hidden">
+    <Card className="h-fit overflow-hidden">
       <div className={cn("relative bg-gradient-to-br p-5", COLORS[w.condition])}>
         <div className="flex items-start justify-between">
           <div>

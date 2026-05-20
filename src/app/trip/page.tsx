@@ -158,7 +158,7 @@ export default function TripPage() {
                 onToggleExpense={() => setExpenseOpen((v) => !v)}
               />
 
-              <div className="grid gap-4 border-t border-border/60 bg-background/60 p-4 backdrop-blur-xl sm:grid-cols-2 xl:grid-cols-3">
+              <div className="grid items-start gap-4 border-t border-border/60 bg-background/60 p-4 backdrop-blur-xl sm:grid-cols-2 xl:grid-cols-3">
                 <div className="sm:col-span-2 xl:col-span-2">
                   <AIItinerary
                     initialDestinationId={destination.id}
@@ -170,10 +170,12 @@ export default function TripPage() {
                     preferences={user.preferences ?? []}
                   />
                 </div>
-                <WeatherWidget destination={destination} />
+                <div className="space-y-4">
+                  <WeatherWidget destination={destination} />
+                  <SosWidget user={user} />
+                </div>
                 <GpsFuelCalculator origin={origin} destination={destination} />
                 <PackingChecklist preferences={user.preferences ?? []} />
-                <SosWidget user={user} />
 
                 <div className="sm:col-span-2 xl:col-span-3">
                   <DestinationPicker
