@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir C:\\\\VS_Code_Pug\\\\SEABW__2026 *)",
+      "PowerShell(Get-Command *)",
+      "PowerShell(pnpm install *)",
+      "PowerShell(pnpm typecheck *)",
+      "PowerShell(pnpm build *)",
+      "PowerShell(Get-Content *)",
+      "Bash(pnpm dev *)",
+      "PowerShell($root = \\(Invoke-WebRequest http://localhost:3000/ -UseBasicParsing\\).StatusCode; $dash = \\(Invoke-WebRequest http://localhost:3000/dashboard -UseBasicParsing\\).StatusCode; $trip = \\(Invoke-WebRequest http://localhost:3000/trip -UseBasicParsing\\).StatusCode; \"/=$root dashboard=$dash trip=$trip\")",
+      "PowerShell($body = '{\"destination\":\"Phuket, Thailand\",\"members\":[\"Alex\",\"Beam\"],\"budget\":15000,\"preferences\":[\"beach\",\"foodie\"]}'; $r = Invoke-WebRequest -Uri http://localhost:3000/api/ai/itinerary -Method POST -Body $body -ContentType 'application/json' -UseBasicParsing; \"status=$\\($r.StatusCode\\) length=$\\($r.Content.Length\\)\"; \\($r.Content | ConvertFrom-Json\\).source)",
+      "PowerShell(\\(Invoke-WebRequest http://localhost:3001/ -UseBasicParsing\\).StatusCode)",
+      "PowerShell($r1 = \\(Invoke-WebRequest http://localhost:3002/ -UseBasicParsing\\).StatusCode; $r2 = \\(Invoke-WebRequest http://localhost:3002/dashboard -UseBasicParsing\\).StatusCode; $r3 = \\(Invoke-WebRequest http://localhost:3002/trip -UseBasicParsing\\).StatusCode; \"/=$r1 dashboard=$r2 trip=$r3\")"
+    ]
+  }
+}
