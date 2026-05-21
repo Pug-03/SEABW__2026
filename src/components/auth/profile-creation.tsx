@@ -58,8 +58,8 @@ export function ProfileCreation({
         </p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <div className="space-y-4 rounded-3xl border border-border/60 bg-card/70 p-6 backdrop-blur-xl">
+      <div className="grid gap-3 sm:gap-6 md:grid-cols-2">
+        <div className="space-y-4 rounded-3xl border border-border/60 bg-card/70 p-4 sm:p-6 backdrop-blur-xl">
           <div className="flex items-center gap-4">
             <Avatar className="h-16 w-16 ring-2 ring-accent/30">
               {user.avatarDataUrl && (
@@ -143,8 +143,9 @@ export function ProfileCreation({
           </div>
         </div>
 
-        <div className="flex items-center justify-center rounded-3xl border border-border/60 bg-card/70 p-6 backdrop-blur-xl">
-          <QRCode value={inviteUrl} size={200} label={`Code: ${inviteCode}`} />
+        <div className="flex items-center justify-center rounded-3xl border border-border/60 bg-card/70 p-4 sm:p-6 backdrop-blur-xl">
+          <QRCode value={inviteUrl} size={160} className="sm:hidden" label={`Code: ${inviteCode}`} />
+          <QRCode value={inviteUrl} size={200} className="hidden sm:flex" label={`Code: ${inviteCode}`} />
         </div>
       </div>
     </div>

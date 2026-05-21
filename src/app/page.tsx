@@ -76,7 +76,7 @@ export default function AuthPage() {
   if (!hydrated) return <Splash />;
 
   return (
-    <main className="relative mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 py-6 sm:px-6 sm:py-10">
+    <main className="relative mx-auto flex min-h-screen w-full max-w-6xl flex-col overflow-x-hidden px-4 py-6 sm:px-6 sm:py-10">
       <header className="flex items-center justify-between">
         <Logo />
         <div className="flex items-center gap-2">
@@ -119,7 +119,7 @@ export default function AuthPage() {
           )}
 
           {step === "preferences" && user && (
-            <div className="mx-auto w-full max-w-4xl space-y-6 rounded-[28px] border border-border/60 bg-card/70 p-6 shadow-xl backdrop-blur-2xl sm:p-10">
+            <div className="mx-auto w-full max-w-4xl space-y-6 rounded-[28px] border border-border/60 bg-card/70 p-4 shadow-xl backdrop-blur-2xl sm:p-8">
               <div className="text-center">
                 <h2 className="text-balance text-2xl font-semibold tracking-tight sm:text-3xl">
                   How do you vibe?
@@ -156,7 +156,7 @@ export default function AuthPage() {
           )}
 
           {step === "profile" && user && (
-            <div className="mx-auto w-full max-w-3xl rounded-[28px] border border-border/60 bg-card/70 p-6 shadow-xl backdrop-blur-2xl sm:p-10">
+            <div className="mx-auto w-full max-w-3xl rounded-[28px] border border-border/60 bg-card/70 p-3 shadow-xl backdrop-blur-2xl sm:p-6 md:p-10">
               <ProfileCreation
                 user={user}
                 inviteUrl={inviteUrl}
