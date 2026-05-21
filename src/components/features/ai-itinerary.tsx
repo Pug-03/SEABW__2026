@@ -85,11 +85,11 @@ export function AIItinerary({
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
-        <div className="flex flex-col gap-2 sm:flex-row">
+        <div className="grid gap-2 grid-cols-1 sm:flex sm:flex-row">
           <select
             value={destId}
             onChange={(e) => setDestId(e.target.value)}
-            className="h-10 flex-1 rounded-2xl border border-input bg-background/50 px-3 text-sm"
+            className="h-10 w-full min-w-0 rounded-2xl border border-input bg-background/50 px-3 text-sm sm:flex-1"
           >
             {DESTINATIONS.map((d) => (
               <option key={d.id} value={d.id}>
@@ -110,7 +110,7 @@ export function AIItinerary({
             variant="accent"
             onClick={generate}
             disabled={loading}
-            className="sm:w-auto"
+            className="w-full sm:w-auto"
           >
             {loading ? (
               <>

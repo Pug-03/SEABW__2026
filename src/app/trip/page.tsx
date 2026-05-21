@@ -4,10 +4,13 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import {
   ChevronLeft,
+  Ellipsis,
   LayoutDashboard,
   Map as MapIcon,
   Menu,
+  MessageCircle,
   SquarePen,
+  Wand2,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -54,6 +57,7 @@ export default function TripPage() {
   const [expenseOpen, setExpenseOpen] = React.useState(false);
   const [showFirstTrip, setShowFirstTrip] = React.useState(false);
   const [firstTripName, setFirstTripName] = React.useState("");
+  const [mobileTab, setMobileTab] = React.useState<"chat" | "plan" | "map" | "more">("chat");
 
   React.useEffect(() => {
     if (hydrated && !user) router.replace("/");
@@ -149,90 +153,143 @@ export default function TripPage() {
         </div>
 
         {active ? (
-          <div className="flex min-h-0 flex-1 overflow-hidden">
-            <div className="flex min-w-0 flex-1 flex-col overflow-y-auto">
-              <ChatInterface
-                group={active}
-                user={user}
-                expenseOpen={expenseOpen}
-                onToggleExpense={() => setExpenseOpen((v) => !v)}
-              />
-
-              <div className="grid items-start gap-4 border-t border-border/60 bg-background/60 p-4 backdrop-blur-xl sm:grid-cols-2 xl:grid-cols-3">
-                <div className="sm:col-span-2 xl:col-span-2">
-                  <AIItinerary
-                    initialDestinationId={destination.id}
-                    members={(active.members ?? []).map((m) => ({
-                      id: m.id,
-                      name: m.name,
-                    }))}
-                    budget={active.budget || remainingBudget}
-                    preferences={user.preferences ?? []}
-                  />
-                </div>
-                <div className="space-y-4">
-                  <WeatherWidget destination={destination} />
-                  <SosWidget user={user} />
-                </div>
-                <GpsFuelCalculator origin={origin} destination={destination} />
-                <PackingChecklist preferences={user.preferences ?? []} />
-
-                <div className="sm:col-span-2 xl:col-span-3">
-                  <DestinationPicker
-                    activeId={destination.id}
-                    onPick={(id) => setGroupDestination(active.id, id)}
-                  />
-                </div>
-
-                <div className="sm:col-span-2 xl:col-span-3">
-                  <AIRecommendationsCard
-                    destination={destination}
-                    preferences={user.preferences ?? []}
-                    remainingBudget={remainingBudget}
-                    origin={origin}
-                  />
-                </div>
-
-                <div className="sm:col-span-2 xl:col-span-3">
-                  <TripMap origin={origin} destination={destination} />
-                </div>
-
-                <div className="sm:col-span-2 xl:col-span-3">
-                  <PhotoWall groupId={active.id} />
-                </div>
-              </div>
-            </div>
-
-            {expenseOpen && (
-              <div className="hidden h-full md:flex">
-                <ExpenseManager
+          <>
+            {/* ── Desktop layout ─────────────────────────────────────────── */}
+            <div className="hidden min-h-0 flex-1 overflow-hidden md:flex">
+              <div className="flex min-w-0 flex-1 flex-col overflow-y-auto">
+                <ChatInterface
                   group={active}
                   user={user}
-                  onClose={() => setExpenseOpen(false)}
+                  expenseOpen={expenseOpen}
+                  onToggleExpense={() => setExpenseOpen((v) => !v)}
                 />
+                <div className="grid items-start gap-4 border-t border-border/60 bg-background/60 p-4 backdrop-blur-xl sm:grid-cols-2 xl:grid-cols-3">
+                  <div className="sm:col-span-2 xl:col-span-2">
+                    <AIItinerary
+                      initialDestinationId={destination.id}
+                      members={(active.members ?? []).map((m) => ({ id: m.id, name: m.name }))}
+                      budget={active.budget || remainingBudget}
+                      preferences={user.preferences ?? []}
+                    />
+                  </div>
+                  <div className="space-y-4">
+                    <WeatherWidget destination={destination} />
+                    <SosWidget user={user} />
+                  </div>
+                  <GpsFuelCalculator origin={origin} destination={destination} />
+                  <PackingChecklist preferences={user.preferences ?? []} />
+                  <div className="sm:col-span-2 xl:col-span-3">
+                    <DestinationPicker activeId={destination.id} onPick={(id) => setGroupDestination(active.id, id)} />
+                  </div>
+                  <div className="sm:col-span-2 xl:col-span-3">
+                    <AIRecommendationsCard destination={destination} preferences={user.preferences ?? []} remainingBudget={remainingBudget} origin={origin} />
+                  </div>
+                  <div className="sm:col-span-2 xl:col-span-3">
+                    <TripMap origin={origin} destination={destination} />
+                  </div>
+                  <div className="sm:col-span-2 xl:col-span-3">
+                    <PhotoWall groupId={active.id} />
+                  </div>
+                </div>
               </div>
-            )}
-          </div>
+              {expenseOpen && (
+                <div className="h-full">
+                  <ExpenseManager group={active} user={user} onClose={() => setExpenseOpen(false)} />
+                </div>
+              )}
+            </div>
+
+            {/* ── Mobile layout: tab-based ────────────────────────────────── */}
+            <div className="flex min-h-0 flex-1 flex-col md:hidden">
+              {/* Tab content — positioned so absolute panels get a definite height */}
+              <div className="relative min-h-0 flex-1">
+                {mobileTab === "chat" && (
+                  <div className="absolute inset-0 flex flex-col">
+                    <ChatInterface
+                      group={active}
+                      user={user}
+                      expenseOpen={expenseOpen}
+                      onToggleExpense={() => setExpenseOpen((v) => !v)}
+                    />
+                  </div>
+                )}
+                {mobileTab === "plan" && (
+                  <div className="absolute inset-0 overflow-x-hidden overflow-y-auto">
+                    <div className="w-full space-y-3 p-3">
+                      <AIItinerary
+                        initialDestinationId={destination.id}
+                        members={(active.members ?? []).map((m) => ({ id: m.id, name: m.name }))}
+                        budget={active.budget || remainingBudget}
+                        preferences={user.preferences ?? []}
+                      />
+                      <WeatherWidget destination={destination} />
+                      <GpsFuelCalculator origin={origin} destination={destination} />
+                      <DestinationPicker activeId={destination.id} onPick={(id) => setGroupDestination(active.id, id)} />
+                    </div>
+                  </div>
+                )}
+                {mobileTab === "map" && (
+                  <div className="absolute inset-0 overflow-y-auto">
+                    <div className="p-3">
+                      <TripMap origin={origin} destination={destination} />
+                    </div>
+                  </div>
+                )}
+                {mobileTab === "more" && (
+                  <div className="absolute inset-0 overflow-x-hidden overflow-y-auto">
+                    <div className="w-full space-y-3 p-3">
+                      <PackingChecklist preferences={user.preferences ?? []} />
+                      <SosWidget user={user} />
+                      <AIRecommendationsCard destination={destination} preferences={user.preferences ?? []} remainingBudget={remainingBudget} origin={origin} />
+                      <PhotoWall groupId={active.id} />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Bottom tab bar */}
+              <nav className="flex shrink-0 border-t border-border/60 bg-card/80 backdrop-blur-xl">
+                {(
+                  [
+                    { id: "chat", label: "Chat", icon: MessageCircle },
+                    { id: "plan", label: "Plan", icon: Wand2 },
+                    { id: "map",  label: "Map",  icon: MapIcon },
+                    { id: "more", label: "More", icon: Ellipsis },
+                  ] as const
+                ).map(({ id, label, icon: Icon }) => (
+                  <button
+                    key={id}
+                    onClick={() => setMobileTab(id)}
+                    className={cn(
+                      "flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[11px] font-medium transition-colors",
+                      mobileTab === id
+                        ? "text-accent"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    <Icon className={cn("h-5 w-5", mobileTab === id && "stroke-[2.5]")} />
+                    {label}
+                  </button>
+                ))}
+              </nav>
+            </div>
+
+            {/* Mobile expense drawer */}
+            <MobileDrawer
+              open={expenseOpen && !!active}
+              onClose={() => setExpenseOpen(false)}
+              side="right"
+              ariaLabel="Expense manager"
+              mdHidden
+            >
+              {active && (
+                <ExpenseManager group={active} user={user} onClose={() => setExpenseOpen(false)} />
+              )}
+            </MobileDrawer>
+          </>
         ) : (
           <EmptyState onCreate={() => setShowFirstTrip(true)} />
         )}
-
-        {/* Mobile expense drawer — custom slide-in (no nested Dialog) */}
-        <MobileDrawer
-          open={expenseOpen && !!active}
-          onClose={() => setExpenseOpen(false)}
-          side="right"
-          ariaLabel="Expense manager"
-          mdHidden
-        >
-          {active && (
-            <ExpenseManager
-              group={active}
-              user={user}
-              onClose={() => setExpenseOpen(false)}
-            />
-          )}
-        </MobileDrawer>
       </section>
 
       {/* First-time trip creation */}
@@ -360,12 +417,12 @@ function DestinationPicker({
   onPick: (id: string) => void;
 }) {
   return (
-    <div className="rounded-3xl border border-border/60 bg-card/70 p-4 backdrop-blur-xl">
+    <div className="overflow-hidden rounded-3xl border border-border/60 bg-card/70 p-4 backdrop-blur-xl">
       <div className="mb-3 flex items-center gap-2">
         <MapIcon className="h-4 w-4 text-accent" />
         <div className="text-sm font-semibold">Trip destination</div>
       </div>
-      <div className="flex gap-3 overflow-x-auto scrollbar-hide">
+      <div className="flex gap-2 overflow-x-auto scrollbar-hide">
         {DESTINATIONS.slice(0, 10).map((d) => {
           const isActive = d.id === activeId;
           return (
@@ -383,7 +440,7 @@ function DestinationPicker({
               <img
                 src={d.imageUrl}
                 alt={d.title}
-                className="h-20 w-32 object-cover"
+                className="h-16 w-28 object-cover sm:h-20 sm:w-32"
               />
               <div className="px-2 py-1 text-xs">
                 <div className="truncate font-medium">{d.title}</div>

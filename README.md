@@ -1,8 +1,8 @@
-# SEABW 2026 — Travel Planning Web App
+# VibeTrip — Travel Planning Web App
 
 ## Overview
 
-SEABW 2026 is a mobile-first travel planning web app for group trips. Travelers can register, choose trip preferences, search destinations, create trip groups, chat with members, share place cards, split bills with QR codes, generate an AI trip plan, and navigate with nearby POI markers.
+VibeTrip is a mobile-first travel planning web app for group trips. Travelers can register, choose trip preferences, search destinations, create trip groups, chat with members, share place cards, split bills with QR codes, generate an AI trip plan, and navigate with nearby POI markers.
 
 The app runs fully in local demo mode by default. Optional Anthropic and Supabase credentials enable live AI itinerary generation and realtime chat sync.
 
