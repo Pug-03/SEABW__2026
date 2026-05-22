@@ -5,12 +5,15 @@ import {
   Copy,
   Edit3,
   Lock,
+  LogOut,
   Mail,
   Phone,
+  RefreshCw,
   ShieldCheck,
   Sparkles,
   Users,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import {
   Dialog,
   DialogContent,
@@ -26,6 +29,7 @@ import { Badge } from "@/components/ui/badge";
 import { QRCode } from "@/components/common/qr-code";
 import type { InsuranceDetails, User } from "@/lib/types";
 import { PREFERENCE_META } from "@/lib/mock-data";
+import { useVibeStore } from "@/lib/store";
 
 interface ProfileModalProps {
   open: boolean;
@@ -42,10 +46,15 @@ export function ProfileModal({
   user,
   onUpdate,
 }: ProfileModalProps) {
+  const router = useRouter();
+  const reset = useVibeStore((s) => s.reset);
+  const setUser = useVibeStore((s) => s.setUser);
+
   const [tab, setTab] = React.useState<Tab>("view");
   const [verified, setVerified] = React.useState(false);
   const [password, setPassword] = React.useState("");
   const [verifyError, setVerifyError] = React.useState<string | null>(null);
+  const [confirmLogout, setConfirmLogout] = React.useState(false);
 
   React.useEffect(() => {
     if (!open) {
@@ -53,8 +62,21 @@ export function ProfileModal({
       setVerified(false);
       setPassword("");
       setVerifyError(null);
+      setConfirmLogout(false);
     }
   }, [open]);
+
+  const handleSwitchAccount = () => {
+    onOpenChange(false);
+    setUser(null);
+    router.push("/");
+  };
+
+  const handleLogout = () => {
+    onOpenChange(false);
+    reset();
+    router.push("/");
+  };
 
   const inviteUrl =
     typeof window !== "undefined"
@@ -182,6 +204,56 @@ export function ProfileModal({
             )}
           </>
         )}
+
+        <div className="border-t border-border/60 pt-3">
+          {confirmLogout ? (
+            <div className="space-y-2 rounded-2xl border border-destructive/30 bg-destructive/5 p-3">
+              <p className="text-sm font-medium text-destructive">
+                Log out and clear all local data?
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Your trips and messages are stored locally and will be removed.
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => setConfirmLogout(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="flex-1"
+                  onClick={handleLogout}
+                >
+                  <LogOut className="h-3.5 w-3.5" /> Yes, log out
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex gap-2">
+              <Button
+                variant="glass"
+                size="sm"
+                className="flex-1"
+                onClick={handleSwitchAccount}
+              >
+                <RefreshCw className="h-3.5 w-3.5" /> Switch account
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1 border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                onClick={() => setConfirmLogout(true)}
+              >
+                <LogOut className="h-3.5 w-3.5" /> Log out
+              </Button>
+            </div>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );
