@@ -133,6 +133,25 @@ export interface PhotoMemory {
   createdAt: string;
 }
 
+export type AttractionCategory = "nature" | "culture" | "activity" | "agro" | "other";
+
+export interface Attraction {
+  id: string;
+  nameEn: string;
+  nameTh: string;
+  descriptionEn: string;
+  province: string;
+  district: string;
+  region: string;
+  category: AttractionCategory;
+  categoryLabel: string;
+  typeLabel: string;
+  coords: { lat: number; lng: number } | null;
+  phone?: string;
+  website?: string;
+  openHours?: string;
+}
+
 export interface ItineraryActivity {
   time: string;
   title: string;

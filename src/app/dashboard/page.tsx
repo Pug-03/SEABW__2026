@@ -17,6 +17,7 @@ import { AIRecommendationsCard } from "@/components/features/ai-recommendations"
 import { BillSplitter } from "@/components/features/bill-splitter";
 import { DestinationDetail } from "@/components/features/destination-detail";
 import { AccommodationDetail } from "@/components/features/accommodation-detail";
+import { AttractionsSection } from "@/components/features/attractions-section";
 import { Splash } from "@/components/common/splash";
 import { useVibeStore } from "@/lib/store";
 import { useGeolocation } from "@/hooks/use-geolocation";
@@ -140,7 +141,11 @@ export default function DashboardPage() {
           </section>
         )}
 
-        <section className="mt-10">
+        <section className="mt-10 rounded-3xl border border-border/60 bg-card/50 p-5 backdrop-blur-xl">
+          <AttractionsSection />
+        </section>
+
+        <section className="mt-6">
           <BillSplitter />
         </section>
 
