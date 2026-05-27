@@ -18,6 +18,7 @@ import { BillSplitter } from "@/components/features/bill-splitter";
 import { DestinationDetail } from "@/components/features/destination-detail";
 import { AccommodationDetail } from "@/components/features/accommodation-detail";
 import { AttractionsSection } from "@/components/features/attractions-section";
+import { HotelBrowser } from "@/components/features/hotel-browser";
 import { Splash } from "@/components/common/splash";
 import { useVibeStore } from "@/lib/store";
 import { useGeolocation } from "@/hooks/use-geolocation";
@@ -142,6 +143,10 @@ export default function DashboardPage() {
         )}
 
         <section className="mt-10 rounded-3xl border border-border/60 bg-card/50 p-5 backdrop-blur-xl">
+          <HotelBrowser />
+        </section>
+
+        <section className="mt-6 rounded-3xl border border-border/60 bg-card/50 p-5 backdrop-blur-xl">
           <AttractionsSection />
         </section>
 
@@ -174,6 +179,8 @@ export default function DashboardPage() {
                 preferences={user.preferences}
                 remainingBudget={remainingBudget}
                 origin={geo.coords ?? user.location ?? null}
+                nickname={user.nickname}
+                homeAddress={user.homeAddress}
               />
             </div>
           </div>

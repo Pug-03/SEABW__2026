@@ -133,6 +133,34 @@ export interface PhotoMemory {
   createdAt: string;
 }
 
+export type HotelType = "hotel" | "resort" | "hostel" | "villa" | "guesthouse" | "boutique";
+
+export interface Hotel {
+  id: string;
+  name: string;
+  province: string;
+  district: string;
+  region: string;
+  address: string;
+  lat: number;
+  lng: number;
+  type: HotelType;
+  stars: number;
+  priceMin: number;
+  priceMax: number;
+  phone: string;
+  email: string;
+  imageUrl: string;
+  gallery: string[];
+  amenities: string[];
+  checkIn: string;
+  checkOut: string;
+  serviceHours: string;
+  tags: string[];
+  rating: number;
+  reviewCount: number;
+}
+
 export type AttractionCategory = "nature" | "culture" | "activity" | "agro" | "other";
 
 export interface Attraction {
