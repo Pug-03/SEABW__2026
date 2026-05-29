@@ -1,9 +1,33 @@
+/**
+ * @file `POST /api/ai/itinerary` — generates a multi-day trip plan.
+ *
+ * Tries Claude (Anthropic) first when `ANTHROPIC_API_KEY` is set;
+ * falls back to a deterministic 3-day mock when the call fails or
+ * the key is missing. The response shape and `source` field let the
+ * client (`<AIItinerary>`) badge the result as "Claude" vs "Demo plan".
+ *
+ * (TH) endpoint สร้างแผนเที่ยวหลายวัน ลอง Claude ก่อน (เมื่อมี env
+ * ANTHROPIC_API_KEY) — ถ้า fail หรือไม่มี key จะ fallback ใช้ mock 3 วัน
+ * field `source` ใน response บอก client ว่าใช้ Claude หรือ Demo
+ */
+
 import { NextResponse } from "next/server";
 import type { Itinerary } from "@/lib/types";
 
+// Node runtime (no edge) + dynamic so each request is fresh.
+// Node runtime (ไม่ใช่ edge) + dynamic เพื่อให้รัน fresh ทุก request
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+/**
+ * Incoming JSON body. Only `destination` is required — the rest are
+ * optional context that gets folded into the prompt.
+ *
+ * (TH) JSON body ที่รับ — บังคับเฉพาะ `destination` ที่เหลือเป็น context
+ * เสริมที่ใส่ใน prompt
+ */
 interface RequestBody {
   destination: string;
   days?: number;
@@ -13,10 +37,32 @@ interface RequestBody {
   preferences?: string[];
 }
 
+// Default trip budget assumption when the caller doesn't specify one.
+// งบประมาณ default เมื่อ caller ไม่ส่งมา
+const DEFAULT_BUDGET = 12000;
+
+// ─── Mock generator ──────────────────────────────────────────────────────────
+
+/**
+ * Build a deterministic 3-day mock itinerary. Activity costs are
+ * derived as percentages of the budget so the totals always sum to
+ * something believable. Members rotate as the "responsible" person.
+ *
+ * NOTE: this currently always returns 3 days regardless of
+ * `body.days`. The shape mirrors the Claude prompt's expected output
+ * so the UI can render either source the same way.
+ *
+ * (TH) สร้าง itinerary 3 วันแบบ mock ค่าใช้จ่ายของกิจกรรมคิดเป็น % ของงบ
+ * เพื่อให้รวมแล้วดูสมเหตุสมผล ผู้รับผิดชอบวนตามรายชื่อสมาชิก
+ * NOTE: ปัจจุบันยังคืน 3 วันเสมอแม้ส่ง `body.days` มา — โครงสร้างเหมือนกับ
+ * ที่ Claude ส่งกลับ ทำให้ UI render ได้เหมือนกัน
+ */
 function mockItinerary(body: RequestBody): Itinerary {
   const destination = body.destination || "Destination";
   const members = body.members?.length ? body.members : ["You"];
-  const budget = body.budget ?? 12000;
+  const budget = body.budget ?? DEFAULT_BUDGET;
+  // Cycle through members to assign a "responsible" per activity.
+  // วนรายชื่อสมาชิกเพื่อใส่ผู้รับผิดชอบของแต่ละกิจกรรม
   const pick = (i: number) => members[i % members.length];
 
   return {
@@ -115,11 +161,27 @@ function mockItinerary(body: RequestBody): Itinerary {
   };
 }
 
+// ─── Claude AI generator ─────────────────────────────────────────────────────
+
+/**
+ * Ask Claude to generate an itinerary as strict JSON. Returns `null`
+ * on any failure (no key, network error, JSON parse error) so the
+ * caller can fall back.
+ *
+ * NOTE: the prompt currently hard-codes "3 days 2 nights" — it
+ * ignores `body.days` / `body.nights`. Fix when wiring up the
+ * frontend's days selector (2/3/5/7).
+ *
+ * (TH) ส่ง prompt ให้ Claude สร้าง itinerary แบบ JSON เคร่งครัด คืน null
+ * เมื่อ fail เพื่อให้ caller fallback ได้
+ * NOTE: prompt ตอนนี้ hardcode "3 days 2 nights" — ยังไม่ใช้ `body.days`/
+ * `body.nights` ควรแก้ตอนเชื่อมตัวเลือกวันของ frontend (2/3/5/7)
+ */
 async function realItinerary(body: RequestBody): Promise<Itinerary | null> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return null;
 
-  const prompt = `Create a 3 days 2 nights detailed itinerary for ${body.destination} including times, activities, and budget. Trip context: members=${(body.members ?? []).join(", ") || "small group"}, preferences=${(body.preferences ?? []).join(", ") || "general"}, totalBudget=THB ${body.budget ?? 12000}. Respond ONLY with valid JSON matching this TypeScript type: { destination: string, totalBudget: number, days: { day: number, title: string, activities: { time: string, title: string, description: string, cost: number, responsible?: string }[] }[] }. No prose.`;
+  const prompt = `Create a 3 days 2 nights detailed itinerary for ${body.destination} including times, activities, and budget. Trip context: members=${(body.members ?? []).join(", ") || "small group"}, preferences=${(body.preferences ?? []).join(", ") || "general"}, totalBudget=THB ${body.budget ?? DEFAULT_BUDGET}. Respond ONLY with valid JSON matching this TypeScript type: { destination: string, totalBudget: number, days: { day: number, title: string, activities: { time: string, title: string, description: string, cost: number, responsible?: string }[] }[] }. No prose.`;
 
   try {
     const res = await fetch("https://api.anthropic.com/v1/messages", {
@@ -140,6 +202,8 @@ async function realItinerary(body: RequestBody): Promise<Itinerary | null> {
       content?: { type: string; text?: string }[];
     };
     const text = data.content?.find((c) => c.type === "text")?.text ?? "";
+    // Find the JSON object boundaries — defensive against extra prose.
+    // หาเขต `{...}` ของ JSON เพื่อกันข้อความเสริม
     const jsonStart = text.indexOf("{");
     const jsonEnd = text.lastIndexOf("}");
     if (jsonStart < 0 || jsonEnd < 0) return null;
@@ -150,19 +214,35 @@ async function realItinerary(body: RequestBody): Promise<Itinerary | null> {
   }
 }
 
+// ─── POST handler ────────────────────────────────────────────────────────────
+
+/**
+ * POST handler — validate body, try Claude, fall back to mock. The
+ * `source` field in the response lets the client badge it as
+ * "Claude" or "Demo plan".
+ *
+ * (TH) handler POST — validate body, ลอง Claude, fallback ใช้ mock
+ * field `source` ใน response บอก client ให้แสดง "Claude" หรือ "Demo plan"
+ */
 export async function POST(req: Request) {
+  // Parse JSON body, return 400 if it's malformed.
+  // parse JSON body, คืน 400 ถ้าผิดรูป
   let body: RequestBody;
   try {
     body = (await req.json()) as RequestBody;
   } catch {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
+  // `destination` is the only required field.
+  // `destination` เป็น field เดียวที่บังคับ
   if (!body.destination) {
     return NextResponse.json(
       { error: "destination is required" },
       { status: 400 }
     );
   }
+  // Real result wins; mock is the safety net.
+  // ผลจาก AI ชนะ; mock เป็น safety net
   const real = await realItinerary(body);
   const itinerary = real ?? mockItinerary(body);
   return NextResponse.json({ itinerary, source: real ? "anthropic" : "mock" });

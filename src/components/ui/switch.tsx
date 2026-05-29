@@ -1,13 +1,30 @@
+/**
+ * @file `<Switch>` — accessible toggle switch built on Radix Switch.
+ * The thumb slides left/right using `data-state=checked|unchecked`.
+ *
+ * (TH) สวิตช์เปิด/ปิด ห่อ Radix Switch รองรับ a11y ตัวลูกบอลจะเลื่อน
+ * ซ้าย/ขวาตาม data-state=checked|unchecked
+ */
+
 "use client";
 
 import * as React from "react";
 import * as SwitchPrimitives from "@radix-ui/react-switch";
 import { cn } from "@/lib/utils";
 
+/**
+ * Toggle switch. Use `checked` + `onCheckedChange` (controlled) or
+ * `defaultChecked` (uncontrolled). Inherits every Radix Switch prop.
+ *
+ * (TH) ใช้แบบ controlled ด้วย `checked` + `onCheckedChange` หรือแบบ
+ * uncontrolled ผ่าน `defaultChecked` ก็ได้ รับ props ของ Radix Switch ครบ
+ */
 const Switch = React.forwardRef<
   React.ElementRef<typeof SwitchPrimitives.Root>,
   React.ComponentPropsWithoutRef<typeof SwitchPrimitives.Root>
 >(({ className, ...props }, ref) => (
+  // Switch root — the rail/track that holds the thumb.
+  // Switch root — รางที่บรรจุปุ่มหัวลูกบอล
   <SwitchPrimitives.Root
     className={cn(
       "peer inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors",
@@ -19,6 +36,8 @@ const Switch = React.forwardRef<
     {...props}
     ref={ref}
   >
+    {/* Thumb — moves via translateX driven by data-state. */}
+    {/* ลูกบอล thumb — เลื่อนด้วย translateX ตาม data-state */}
     <SwitchPrimitives.Thumb
       className={cn(
         "pointer-events-none block h-5 w-5 rounded-full bg-background shadow-lg ring-0 transition-transform",

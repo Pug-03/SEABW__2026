@@ -1,3 +1,25 @@
+/**
+ * @file Global client-side store (Zustand) for the VibeTrip app.
+ *
+ * This is the single source of truth for everything that persists between
+ * page navigations and reloads:
+ *   - The signed-in user.
+ *   - All trip groups the user belongs to (and which one is "active").
+ *   - Photos uploaded to the shared photo wall.
+ *   - A demo-data seeded flag so we only inject the Phuket demo once.
+ *
+ * Persistence: `zustand/middleware/persist` writes the entire state into
+ * `localStorage` under the key `"vibetrip-store"`. Because that runs only
+ * in the browser, server components must NOT call `useVibeStore` directly
+ * during render; pages that read store data are marked `"use client"` and
+ * guarded by the `useStoreHydrated` hook to avoid SSR hydration mismatches.
+ *
+ * File layout:
+ *   1. Demo-trip constants and seed builders (Phuket group).
+ *   2. State + action interface (`VibeState`).
+ *   3. The actual store: state initializers + every action.
+ */
+
 "use client";
 
 import { create } from "zustand";
@@ -14,20 +36,36 @@ import type {
 } from "./types";
 import { generateId } from "./utils";
 
-// ─── Stable IDs for the demo trip so it never duplicates ─────────────────────
+// ─── 1. Demo trip constants ──────────────────────────────────────────────────
+// Stable IDs so the Phuket demo group can't be duplicated by `createDemoGroup`.
+
 const DEMO_GROUP_ID = "grp_phuket_demo_2026";
 const DEMO_ALEX = { id: "usr_demo_alex", name: "Alex" };
 const DEMO_SARA = { id: "usr_demo_sara", name: "Sara" };
 const DEMO_MIKE = { id: "usr_demo_mike", name: "Mike" };
 
-// Build a demo ISO timestamp: July 12 2026, 10:30 AM Bangkok (UTC+7 = 03:30 UTC)
+/**
+ * Build an ISO timestamp anchored to 10:30 AM Bangkok time on
+ * 2026-07-12 (UTC+7 → 03:30 UTC), offset by `minuteOffset` minutes.
+ *
+ * Used so the demo chat messages have a believable, monotonically
+ * increasing timestamp sequence regardless of when the demo is seeded.
+ */
 function demoTs(minuteOffset: number, secondOffset = 0): string {
   return new Date(
     Date.UTC(2026, 6, 12, 3, 30 + minuteOffset, secondOffset)
   ).toISOString();
 }
 
+/**
+ * Build the pre-populated chat for the Phuket demo group.
+ *
+ * The current user is woven into the conversation (`dmsg_07`, `dmsg_08`)
+ * so the chat feels personal as soon as the demo is opened. Other authors
+ * are the three fixed demo personas.
+ */
 function buildDemoMessages(userId: string, userName: string): ChatMessage[] {
+  // A shared "destination" place card that one of the demo users posts.
   const beachCard: PlaceCard = {
     type: "destination",
     id: "phuket",
@@ -38,6 +76,7 @@ function buildDemoMessages(userId: string, userName: string): ChatMessage[] {
     rating: 4.8,
   };
 
+  // A hotel card the current user "shares" into the chat.
   const hotelCard: PlaceCard = {
     type: "accommodation",
     id: "h1",
@@ -49,6 +88,7 @@ function buildDemoMessages(userId: string, userName: string): ChatMessage[] {
     rating: 4.9,
   };
 
+  // Compact helper for assembling a ChatMessage with the demo group ID baked in.
   const msg = (
     id: string,
     authorId: string,
@@ -68,6 +108,7 @@ function buildDemoMessages(userId: string, userName: string): ChatMessage[] {
     ...extra,
   });
 
+  // The conversation is intentionally ordered chronologically.
   return [
     msg("dmsg_01", DEMO_ALEX.id, DEMO_ALEX.name, "Hey everyone! Super excited for this trip 🌊", "text", demoTs(0)),
     msg("dmsg_02", DEMO_SARA.id, DEMO_SARA.name, "Same!! I already packed my swimsuit haha", "text", demoTs(1)),
@@ -83,47 +124,107 @@ function buildDemoMessages(userId: string, userName: string): ChatMessage[] {
   ];
 }
 
+// ─── 2. State + action surface ───────────────────────────────────────────────
+
+/**
+ * Shape of the persisted Zustand store.
+ *
+ * Each action is documented inline below — if you add one, also document
+ * how it interacts with persistence (especially fields that need migration
+ * on schema bumps).
+ */
 interface VibeState {
+  // ── Persisted state ──
+  /** Currently signed-in user, or `null` if signed out. */
   user: User | null;
+  /** All trip groups visible to the user. */
   groups: TripGroup[];
+  /** Currently selected group ID for the `/trip` route. */
   activeGroupId: string | null;
+  /** All photos across all groups (filtered per-group at render time). */
   photos: PhotoMemory[];
+  /** True once the Phuket demo has been seeded — prevents duplicates. */
   demoSeeded: boolean;
 
+  // ── User actions ──
+  /** Replace the entire user object (or sign out by passing `null`). */
   setUser: (u: User | null) => void;
+  /** Partially update fields on the current user. No-op when signed out. */
   updateUser: (patch: Partial<User>) => void;
+  /** Add/remove a preference from `user.preferences`. */
   togglePreference: (p: Preference) => void;
+
+  // ── Group lifecycle ──
+  /** Create a new (empty) group, set it active, and return it. */
   createGroup: (name: string) => TripGroup;
+  /** Remove a group and its photos. Advances `activeGroupId` if needed. */
   deleteGroup: (id: string) => void;
+  /** Inject the canonical Phuket demo group for the given user. */
   createDemoGroup: (user: User) => void;
+  /** Switch the active group (e.g. when clicking a group in the sidebar). */
   setActiveGroup: (id: string) => void;
+
+  // ── Per-group mutations ──
   setGroupBudget: (groupId: string, budget: number) => void;
   setGroupDestination: (groupId: string, destinationId: string) => void;
-  addExpense: (groupId: string, e: Omit<Expense, "id" | "groupId" | "createdAt">) => void;
-  addMessage: (groupId: string, m: Omit<ChatMessage, "id" | "groupId" | "createdAt">) => void;
+  addExpense: (
+    groupId: string,
+    e: Omit<Expense, "id" | "groupId" | "createdAt">
+  ) => void;
+  addMessage: (
+    groupId: string,
+    m: Omit<ChatMessage, "id" | "groupId" | "createdAt">
+  ) => void;
+  /** Create a poll AND post a system message announcing it. */
   addPoll: (groupId: string, question: string, options: string[]) => Poll;
-  votePoll: (groupId: string, pollId: string, optionId: string, userId: string) => void;
+  /** Cast (or change) one user's vote on a poll option. */
+  votePoll: (
+    groupId: string,
+    pollId: string,
+    optionId: string,
+    userId: string
+  ) => void;
+
+  // ── Photo wall ──
   addPhoto: (p: Omit<PhotoMemory, "id" | "createdAt">) => void;
+
+  // ── Maintenance ──
+  /** Wipe everything (used by the logout / "switch account" flow). */
   reset: () => void;
 }
 
+// ─── 3. Store ────────────────────────────────────────────────────────────────
+
+/**
+ * The global app store. Use the standard Zustand selector pattern in
+ * components to subscribe to only the slice you need:
+ *
+ *   const user = useVibeStore((s) => s.user);
+ *   const addMessage = useVibeStore((s) => s.addMessage);
+ *
+ * Persisted to `localStorage` under the key `"vibetrip-store"`.
+ */
 export const useVibeStore = create<VibeState>()(
   persist(
     (set, get) => ({
+      // ── Initial state ──
       user: null,
       groups: [],
       activeGroupId: null,
       photos: [],
       demoSeeded: false,
 
+      // ── User actions ──
       setUser: (u) => set({ user: u }),
 
       updateUser: (patch) =>
+        // Merge `patch` onto the current user; do nothing if signed out.
         set((s) => (s.user ? { user: { ...s.user, ...patch } } : s)),
 
       togglePreference: (p) =>
         set((s) => {
           if (!s.user) return s;
+          // Add if missing, remove if already present.
           const has = s.user.preferences.includes(p);
           const preferences = has
             ? s.user.preferences.filter((x) => x !== p)
@@ -131,8 +232,10 @@ export const useVibeStore = create<VibeState>()(
           return { user: { ...s.user, preferences } };
         }),
 
+      // ── Group lifecycle ──
       createGroup: (name) => {
         const user = get().user;
+        // Build a new empty group. If signed in, the user is the sole member.
         const group: TripGroup = {
           id: generateId("grp"),
           name,
@@ -150,6 +253,7 @@ export const useVibeStore = create<VibeState>()(
           messages: [],
           polls: [],
           createdAt: new Date().toISOString(),
+          // Short, shareable, uppercase invite code derived from a random ID.
           inviteCode: generateId("inv").slice(4, 12).toUpperCase(),
         };
         set((s) => ({
@@ -162,6 +266,8 @@ export const useVibeStore = create<VibeState>()(
       deleteGroup: (id) =>
         set((s) => {
           const remaining = s.groups.filter((g) => g.id !== id);
+          // If we just deleted the active group, jump to whatever's left
+          // (or `null` if no groups remain).
           const nextActive =
             s.activeGroupId === id
               ? (remaining[0]?.id ?? null)
@@ -169,6 +275,7 @@ export const useVibeStore = create<VibeState>()(
           return {
             groups: remaining,
             activeGroupId: nextActive,
+            // Also drop any photos that belonged to the deleted group.
             photos: s.photos.filter((p) => p.groupId !== id),
           };
         }),
@@ -192,6 +299,7 @@ export const useVibeStore = create<VibeState>()(
           createdAt: new Date("2026-07-10T09:00:00.000Z").toISOString(),
           inviteCode: "PHUKET26",
         };
+        // Prepend the demo so it appears first in the sidebar.
         set((s) => ({
           groups: [demo, ...s.groups],
           activeGroupId: demo.id,
@@ -201,9 +309,14 @@ export const useVibeStore = create<VibeState>()(
 
       setActiveGroup: (id) => set({ activeGroupId: id }),
 
+      // ── Per-group mutations ──
+      // (Each follows the same "map groups, patch the matching one" shape.)
+
       setGroupBudget: (groupId, budget) =>
         set((s) => ({
-          groups: s.groups.map((g) => (g.id === groupId ? { ...g, budget } : g)),
+          groups: s.groups.map((g) =>
+            g.id === groupId ? { ...g, budget } : g
+          ),
         })),
 
       setGroupDestination: (groupId, destinationId) =>
@@ -221,6 +334,7 @@ export const useVibeStore = create<VibeState>()(
                   ...g,
                   expenses: [
                     ...g.expenses,
+                    // Caller passes the variable bits; we stamp id/groupId/createdAt.
                     {
                       ...e,
                       id: generateId("exp"),
@@ -241,6 +355,7 @@ export const useVibeStore = create<VibeState>()(
                   ...g,
                   messages: [
                     ...g.messages,
+                    // Same stamping pattern as addExpense.
                     {
                       ...m,
                       id: generateId("msg"),
@@ -254,6 +369,7 @@ export const useVibeStore = create<VibeState>()(
         })),
 
       addPoll: (groupId, question, options) => {
+        // Build the poll first so we can attach `pollId` to the announcement.
         const poll: Poll = {
           id: generateId("pol"),
           groupId,
@@ -272,6 +388,8 @@ export const useVibeStore = create<VibeState>()(
               ? {
                   ...g,
                   polls: [...g.polls, poll],
+                  // Also post a "Poll launched: …" message so the chat
+                  // shows the poll inline (kind === "poll").
                   messages: [
                     ...g.messages,
                     {
@@ -298,6 +416,10 @@ export const useVibeStore = create<VibeState>()(
             if (g.id !== groupId) return g;
             return {
               ...g,
+              // Two-pass update on the target poll:
+              //   Pass 1: strip any existing vote by `userId` from EVERY
+              //           option (so changing vote works without double-counting).
+              //   Pass 2: add the user's vote to the chosen option.
               polls: g.polls
                 .map((p) =>
                   p.id !== pollId
@@ -326,6 +448,7 @@ export const useVibeStore = create<VibeState>()(
           }),
         })),
 
+      // ── Photo wall ──
       addPhoto: (p) =>
         set((s) => ({
           photos: [
@@ -334,10 +457,19 @@ export const useVibeStore = create<VibeState>()(
           ],
         })),
 
+      // ── Maintenance ──
       reset: () =>
-        set({ user: null, groups: [], activeGroupId: null, photos: [], demoSeeded: false }),
+        set({
+          user: null,
+          groups: [],
+          activeGroupId: null,
+          photos: [],
+          demoSeeded: false,
+        }),
     }),
     {
+      // Persistence config — keep this key stable; changing it would
+      // orphan every user's saved data.
       name: "vibetrip-store",
       storage: createJSONStorage(() => localStorage),
     }

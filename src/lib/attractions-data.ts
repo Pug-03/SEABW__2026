@@ -1,7 +1,22 @@
-// AUTO-GENERATED from attraction.csv — 2026-05-22
-// 178 Thai tourist attractions from the Tourism Authority of Thailand dataset
+/**
+ * @file Static Thai tourist attractions dataset.
+ *
+ * AUTO-GENERATED from `attraction.csv` on 2026-05-22.
+ * 178 attractions sourced from the Tourism Authority of Thailand.
+ *
+ * DO NOT EDIT INDIVIDUAL ENTRIES BY HAND — re-run the generator instead,
+ * otherwise the next CSV import will overwrite your edits.
+ *
+ * Schema: see `Attraction` in `./types.ts`. Some fields are intentionally
+ * in Thai script (province/district/categoryLabel/typeLabel/openHours)
+ * because the source data is bilingual and the UI displays both.
+ */
 import type { Attraction } from "./types";
 
+/**
+ * The full attraction catalog. Components import this and filter
+ * client-side (e.g. by `region` or `category`). Treat as read-only.
+ */
 export const ATTRACTIONS: Attraction[] = [
   {
     id: "att-001",

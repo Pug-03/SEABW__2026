@@ -1,5 +1,30 @@
+/**
+ * @file Static seed data for the VibeTrip demo.
+ *
+ * This module contains hand-curated destinations, accommodations, packing
+ * lists, and SOS contacts that drive the dashboard, search, and map
+ * features when the app is run without a backend.
+ *
+ * Sections:
+ *   1. `PREFERENCE_META`   — UI metadata for each Preference category.
+ *   2. `DESTINATIONS`      — Curated travel destinations (carousel + search).
+ *   3. `ACCOMMODATIONS`    — Curated lodging tied to destinations.
+ *   4. `PACKING_LISTS`     — Default packing checklist per preference.
+ *   5. `SOS_FACILITIES`    — Emergency contacts shown by the SOS widget.
+ *   6. Fuel constants      — Used by the GPS fuel calculator.
+ *
+ * Adding entries here is safe; the app reads these as read-only arrays.
+ */
+
 import type { Accommodation, Destination, Preference } from "./types";
 
+// ─── 1. Preference metadata ─────────────────────────────────────────────────
+
+/**
+ * Per-preference UI metadata. Keys must cover every `Preference` member
+ * (enforced by `Record<Preference, ...>`). `icon` matches a lucide-react
+ * component name and is resolved at render time.
+ */
 export const PREFERENCE_META: Record<
   Preference,
   { label: string; description: string; icon: string }
@@ -14,6 +39,17 @@ export const PREFERENCE_META: Record<
   foodie: { label: "Foodie", description: "Local flavors", icon: "UtensilsCrossed" },
 };
 
+// ─── 2. Destinations ────────────────────────────────────────────────────────
+
+/**
+ * Curated destinations powering:
+ *   - The seasonal carousel on the dashboard.
+ *   - The dashboard search input (matches title/region/tags/tripType).
+ *   - Destination detail modals.
+ *
+ * Each `id` is a stable slug; keep them stable because they're referenced
+ * by `TripGroup.destinationId` in persisted user data.
+ */
 export const DESTINATIONS: Destination[] = [
   {
     id: "phuket",
@@ -197,6 +233,13 @@ export const DESTINATIONS: Destination[] = [
   },
 ];
 
+// ─── 3. Accommodations ──────────────────────────────────────────────────────
+
+/**
+ * Curated lodging options. Each row references a destination via
+ * `destinationId`. Used by the accommodation detail modal and the
+ * "share to chat" flow that embeds a `PlaceCard` in group chat.
+ */
 export const ACCOMMODATIONS: Accommodation[] = [
   {
     id: "h1",
@@ -385,6 +428,13 @@ export const ACCOMMODATIONS: Accommodation[] = [
   },
 ];
 
+// ─── 4. Packing checklist templates ─────────────────────────────────────────
+
+/**
+ * Default packing items per preference. The packing-checklist widget
+ * unions items across all of the user's selected preferences and
+ * de-duplicates by item name.
+ */
 export const PACKING_LISTS: Record<Preference, string[]> = {
   beach: [
     "Swimsuit",
@@ -455,6 +505,16 @@ export const PACKING_LISTS: Record<Preference, string[]> = {
   ],
 };
 
+// ─── 5. SOS facilities (emergency contacts) ─────────────────────────────────
+
+/**
+ * Static emergency contacts used by the SOS widget. `distanceKm` is a
+ * placeholder — when the user's geolocation is available, the widget
+ * would normally recompute this with `haversineDistanceKm`.
+ *
+ * The `as const` on `type` narrows the literal so the SOS UI can switch
+ * on it without `string` widening.
+ */
 export const SOS_FACILITIES = [
   {
     type: "Hospital" as const,
@@ -482,5 +542,10 @@ export const SOS_FACILITIES = [
   },
 ];
 
+// ─── 6. Fuel constants (GPS fuel calculator) ────────────────────────────────
+
+/** Current pump price assumption in Thai baht per liter. */
 export const FUEL_RATE_THB_PER_LITER = 39.5;
+
+/** Assumed fuel economy in km/L for an average sedan. */
 export const AVG_KM_PER_LITER = 13;
