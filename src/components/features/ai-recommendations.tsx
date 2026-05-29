@@ -67,20 +67,32 @@ export function AIRecommendationsCard({
   // คำแนะนำที่ดึงมา + แหล่งที่มา
   const [recs, setRecs] = React.useState<HotelRec[] | null>(null);
   const [source, setSource] = React.useState<"anthropic" | "algorithmic" | null>(null);
-  // Loading flag and currently selected hotel (for QuickDetail).
-  // ธง loading และโรงแรมที่เลือก (สำหรับโชว์ QuickDetail)
+  // Loading flag, error message, and currently selected hotel (for QuickDetail).
+  // ธง loading, ข้อความ error, และโรงแรมที่เลือก (สำหรับ QuickDetail)
   const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
   const [selected, setSelected] = React.useState<Hotel | null>(null);
 
+  // Derive primitive keys so the auto-fetch effect only re-runs when
+  // VALUES change, not whenever the parent passes a new array/object
+  // reference with the same contents. This avoids redundant API calls.
+  // ดึง key แบบ primitive — effect ดึงข้อมูลจะ re-run ตามค่าที่เปลี่ยนจริง
+  // ไม่ใช่ตอน parent ส่ง array/object reference ใหม่ที่ค่าเดิม กัน fetch ซ้ำ
+  const prefsKey = preferences.join("|");
+  const lat = origin?.lat;
+  const lng = origin?.lng;
+
   /**
-   * Re-fetch recommendations based on the latest props. Wrapped in
-   * `useCallback` so the effect below has a stable dep.
+   * Re-fetch recommendations based on the latest props. Manual trigger
+   * for the refresh icon. Auto-fetch happens in the effect below and
+   * uses primitive keys for stability.
    *
-   * (TH) ดึงคำแนะนำใหม่ตามค่า props ล่าสุด — ห่อด้วย useCallback เพื่อให้
-   * effect ด้านล่าง dep เสถียร
+   * (TH) ดึงคำแนะนำใหม่ — ใช้ตอนกดปุ่ม refresh ส่วน auto-fetch ใน effect
+   * ด้านล่างใช้ key primitive เพื่อความเสถียร
    */
   const load = React.useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const res = await fetch("/api/ai/recommendations", {
         method: "POST",
@@ -98,24 +110,74 @@ export function AIRecommendationsCard({
             : undefined,
         }),
       });
-      if (res.ok) {
-        const data = (await res.json()) as {
-          recommendations: HotelRec[];
-          source: "anthropic" | "algorithmic";
-        };
-        setRecs(data.recommendations);
-        setSource(data.source);
+      if (!res.ok) {
+        setError("Couldn't load recommendations.");
+        return;
       }
+      const data = (await res.json()) as {
+        recommendations: HotelRec[];
+        source: "anthropic" | "algorithmic";
+      };
+      setRecs(data.recommendations);
+      setSource(data.source);
+    } catch {
+      setError("Network error while loading recommendations.");
     } finally {
       setLoading(false);
     }
   }, [preferences, origin, remainingBudget, nickname, homeAddress]);
 
-  // Fire on mount and whenever any input changes.
-  // เรียกตอน mount และทุกครั้งที่ input เปลี่ยน
+  // Auto-fetch on mount + whenever any meaningful input VALUE changes.
+  // Keyed by primitive strings/numbers (not array/object refs) so a parent
+  // re-render with structurally-identical props won't trigger a refetch.
+  // Cancellation guard prevents `setState` after the component unmounts.
+  // auto-fetch ตอน mount และเมื่อค่าใด ๆ เปลี่ยน — ใช้ key primitive เพื่อ
+  // ไม่ให้ refetch เมื่อ parent re-render ด้วยค่าเดิม + cancel ตอน unmount
   React.useEffect(() => {
-    load();
-  }, [load]);
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetch("/api/ai/recommendations", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            preferences,
+            location: origin ?? undefined,
+            budget: remainingBudget > 0 ? remainingBudget : undefined,
+            nickname,
+            homeAddress,
+            region: preferences.some((p) => ["beach", "island"].includes(p))
+              ? "Southern Thailand"
+              : undefined,
+          }),
+        });
+        if (cancelled) return;
+        if (!res.ok) {
+          setError("Couldn't load recommendations.");
+          return;
+        }
+        const data = (await res.json()) as {
+          recommendations: HotelRec[];
+          source: "anthropic" | "algorithmic";
+        };
+        if (cancelled) return;
+        setRecs(data.recommendations);
+        setSource(data.source);
+      } catch {
+        if (!cancelled) setError("Network error while loading recommendations.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // Deliberate: dep on primitive keys, not the array/object props.
+    // (TH) ตั้งใจใช้ key primitive แทน array/object dep
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prefsKey, lat, lng, remainingBudget, nickname, homeAddress]);
 
   return (
     // Outer vertical wrapper.
@@ -160,6 +222,16 @@ export function AIRecommendationsCard({
         </div>
       </div>
 
+      {error && !loading && (
+        /* Inline error panel — shown when fetch fails. Refresh button retries. */
+        /* แผ่น error — แสดงเมื่อ fetch ล้มเหลว กดปุ่ม refresh เพื่อลองใหม่ */
+        <div className="flex items-center justify-between gap-2 rounded-2xl border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+          <span>{error}</span>
+          <Button variant="ghost" size="sm" className="h-7" onClick={load}>
+            Retry
+          </Button>
+        </div>
+      )}
       {loading && !recs ? (
         /* Loading state — only shown until the first batch arrives. */
         /* state loading — แสดงเฉพาะก่อนได้ผลลัพธ์ครั้งแรก */

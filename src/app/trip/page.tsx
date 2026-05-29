@@ -161,9 +161,9 @@ export default function TripPage() {
     // Fullscreen flex row — sidebar on the left, content on the right.
     // flex row เต็มจอ — sidebar ซ้าย, content ขวา
     <main className="flex h-screen min-h-0 w-full overflow-hidden">
-      {/* Desktop sidebar (hidden on mobile). */}
-      {/* sidebar เดสก์ท็อป (ซ่อนบนมือถือ) */}
-      <div className="hidden md:flex">
+      {/* Desktop sidebar — visible from lg upward (tablets use the drawer). */}
+      {/* sidebar เดสก์ท็อป — โผล่ตั้งแต่ lg ขึ้นไป (tablet ใช้ drawer แทน) */}
+      <div className="hidden lg:flex">
         <GroupSidebar
           collapsed={sidebarCollapsed}
           onToggleCollapse={() => setSidebarCollapsed((v) => !v)}
@@ -187,9 +187,9 @@ export default function TripPage() {
       {/* Right-of-sidebar content section. */}
       {/* ส่วนเนื้อหาทางขวาของ sidebar */}
       <section className="flex min-h-0 flex-1 flex-col">
-        {/* Mobile top bar — menu + group name + dashboard shortcut. */}
-        {/* แถบบนของมือถือ — menu + ชื่อกลุ่ม + shortcut ไป dashboard */}
-        <div className="flex items-center gap-2 border-b border-border/60 bg-card/60 px-3 py-2 backdrop-blur-xl md:hidden">
+        {/* Mobile/tablet top bar — menu + group name + dashboard shortcut. */}
+        {/* แถบบนของมือถือ/แท็บเล็ต — menu + ชื่อกลุ่ม + shortcut ไป dashboard */}
+        <div className="flex items-center gap-2 border-b border-border/60 bg-card/60 px-3 py-2 backdrop-blur-xl lg:hidden">
           {/* Open drawer button. */}
           {/* ปุ่มเปิด drawer */}
           <Button
@@ -221,79 +221,88 @@ export default function TripPage() {
 
         {active ? (
           <>
-            {/* Desktop layout — chat column + bottom panel + optional expense rail. */}
-            {/* layout เดสก์ท็อป — คอลัมน์แชท + แผงล่าง + (optional) expense rail */}
-            <div className="hidden min-h-0 flex-1 overflow-hidden md:flex">
-              {/* Main scrollable column. */}
-              {/* คอลัมน์ scroll หลัก */}
-              <div className="flex min-w-0 flex-1 flex-col overflow-y-auto">
-                {/* Chat interface (header + messages + input). */}
-                {/* ChatInterface (header + ข้อความ + input) */}
+            {/* Desktop layout — chat (main) + widget rail (right) + optional expense rail. */}
+            {/* layout เดสก์ท็อป — chat (หลัก) + widget rail (ขวา) + expense rail (เลือก) */}
+            {/*                                                                                */}
+            {/* WHY THE EXTRA STRUCTURE: an earlier version stacked the chat above the widget */}
+            {/* grid inside a single `flex-col overflow-y-auto` container. Because the widget */}
+            {/* grid is content-sized and very tall, the chat's `flex-1` collapsed to 0 and   */}
+            {/* the chat became invisible on desktop. Splitting them into two siblings with   */}
+            {/* their own scroll contexts keeps the chat at full height.                      */}
+            {/* (TH) โครงนี้แยก chat + widget เป็นสองคอลัมน์เพื่อให้ chat มีความสูงจริงเสมอ —   */}
+            {/* การ stack ในคอลัมน์เดียวเดิมทำให้ chat ถูกบีบหายไปเพราะ widget สูงมาก          */}
+            <div className="hidden min-h-0 flex-1 overflow-hidden lg:flex">
+              {/* Main chat column — owns the full available height. */}
+              {/* คอลัมน์ chat หลัก — กินความสูงทั้งหมดที่เหลือ */}
+              <div className="flex min-h-0 min-w-0 flex-1 flex-col">
                 <ChatInterface
                   group={active}
                   user={user}
                   expenseOpen={expenseOpen}
                   onToggleExpense={() => setExpenseOpen((v) => !v)}
                 />
-                {/* Bottom planning panel — 2 → 3 col grid of widgets. */}
-                {/* แผง planning ด้านล่าง — กริด widget 2 → 3 คอลัมน์ */}
-                <div className="grid items-start gap-4 border-t border-border/60 bg-background/60 p-4 backdrop-blur-xl sm:grid-cols-2 xl:grid-cols-3">
-                  {/* AI itinerary — spans 2 columns on xl. */}
-                  {/* AI itinerary — กิน 2 คอลัมน์ บน xl */}
-                  <div className="sm:col-span-2 xl:col-span-2">
-                    <AIItinerary
-                      initialDestinationId={destination.id}
-                      members={(active.members ?? []).map((m) => ({ id: m.id, name: m.name }))}
-                      budget={active.budget || remainingBudget}
-                      preferences={user.preferences ?? []}
-                    />
-                  </div>
-                  {/* Right side — weather + SOS. */}
-                  {/* ฝั่งขวา — weather + SOS */}
-                  <div className="space-y-4">
-                    <WeatherWidget destination={destination} />
-                    <SosWidget user={user} />
-                  </div>
+              </div>
+
+              {/* Widget rail — scrolls independently. Hidden when expense is open  */}
+              {/* unless we're on 2xl where everything fits at once.                */}
+              {/* widget rail — scroll แยก, ซ่อนเมื่อ expense เปิด (ยกเว้น 2xl ที่กว้างพอ) */}
+              <aside
+                className={cn(
+                  "h-full w-80 shrink-0 overflow-y-auto border-l border-border/60 bg-background/60 backdrop-blur-xl xl:w-[360px]",
+                  expenseOpen ? "hidden 2xl:block" : "block"
+                )}
+                aria-label="Trip planning"
+              >
+                {/* Vertical stack of planning widgets. */}
+                {/* แผงวิดเจ็ตวางเรียงแนวตั้ง */}
+                <div className="space-y-4 p-4">
+                  {/* AI itinerary. */}
+                  {/* AI itinerary */}
+                  <AIItinerary
+                    initialDestinationId={destination.id}
+                    members={(active.members ?? []).map((m) => ({ id: m.id, name: m.name }))}
+                    budget={active.budget || remainingBudget}
+                    preferences={user.preferences ?? []}
+                  />
+                  {/* Weather. */}
+                  {/* weather */}
+                  <WeatherWidget destination={destination} />
+                  {/* SOS widget. */}
+                  {/* widget SOS */}
+                  <SosWidget user={user} />
                   {/* GPS fuel calculator. */}
-                  {/* GPS fuel calculator */}
+                  {/* GPS fuel */}
                   <GpsFuelCalculator origin={origin} destination={destination} />
                   {/* Packing checklist. */}
                   {/* checklist สัมภาระ */}
                   <PackingChecklist preferences={user.preferences ?? []} />
-                  {/* Destination picker — full width. */}
-                  {/* ตัวเลือก destination — เต็มความกว้าง */}
-                  <div className="sm:col-span-2 xl:col-span-3">
-                    <DestinationPicker activeId={destination.id} onPick={(id) => setGroupDestination(active.id, id)} />
-                  </div>
-                  {/* AI recommendations — full width. */}
-                  {/* AI recs — เต็มความกว้าง */}
-                  <div className="sm:col-span-2 xl:col-span-3">
-                    <AIRecommendationsCard destination={destination} preferences={user.preferences ?? []} remainingBudget={remainingBudget} origin={origin} />
-                  </div>
-                  {/* Map — full width. */}
-                  {/* แผนที่ — เต็มความกว้าง */}
-                  <div className="sm:col-span-2 xl:col-span-3">
-                    <TripMap origin={origin} destination={destination} />
-                  </div>
-                  {/* Photo wall — full width. */}
-                  {/* photo wall — เต็มความกว้าง */}
-                  <div className="sm:col-span-2 xl:col-span-3">
-                    <PhotoWall groupId={active.id} />
-                  </div>
+                  {/* Destination picker. */}
+                  {/* ตัวเลือก destination */}
+                  <DestinationPicker activeId={destination.id} onPick={(id) => setGroupDestination(active.id, id)} />
+                  {/* AI recommendations. */}
+                  {/* AI recs */}
+                  <AIRecommendationsCard destination={destination} preferences={user.preferences ?? []} remainingBudget={remainingBudget} origin={origin} />
+                  {/* Map. */}
+                  {/* แผนที่ */}
+                  <TripMap origin={origin} destination={destination} />
+                  {/* Photo wall. */}
+                  {/* photo wall */}
+                  <PhotoWall groupId={active.id} />
                 </div>
-              </div>
+              </aside>
+
               {expenseOpen && (
-                /* Right expense rail (desktop only). */
-                /* expense rail ฝั่งขวา (เฉพาะเดสก์ท็อป) */
+                /* Right expense rail (desktop). */
+                /* expense rail ฝั่งขวา (เดสก์ท็อป) */
                 <div className="h-full">
                   <ExpenseManager group={active} user={user} onClose={() => setExpenseOpen(false)} />
                 </div>
               )}
             </div>
 
-            {/* Mobile layout — tab content + bottom nav. */}
-            {/* layout มือถือ — tab content + nav ล่าง */}
-            <div className="flex min-h-0 flex-1 flex-col md:hidden">
+            {/* Mobile/tablet layout — tab content + bottom nav (used below lg). */}
+            {/* layout มือถือ/แท็บเล็ต — tab content + nav ล่าง (ใช้ตั้งแต่ < lg ลงไป) */}
+            <div className="flex min-h-0 flex-1 flex-col lg:hidden">
               {/* Relative container so absolute children have a known height. */}
               {/* container relative เพื่อให้ child absolute มีความสูงที่ชัดเจน */}
               <div className="relative min-h-0 flex-1">
@@ -520,15 +529,17 @@ function MobileDrawer({
   }, [open]);
 
   return (
-    // Drawer root — fixed inset for fullscreen overlay; hidden on md+.
-    // drawer root — fixed inset ครอบทั้งจอ; ซ่อนตั้งแต่ md
+    // Drawer root — fixed inset for fullscreen overlay; hidden on lg+
+    // because lg uses the desktop sidebar/expense-rail instead.
+    // drawer root — fixed inset ครอบทั้งจอ; ซ่อนตั้งแต่ lg ขึ้นไป
+    // (เพราะ lg ใช้ sidebar/expense rail ของเดสก์ท็อปแทน)
     <div
       role="dialog"
       aria-label={ariaLabel}
       aria-hidden={!open}
       className={cn(
-        "fixed inset-0 z-50 md:hidden",
-        mdHidden && "md:hidden",
+        "fixed inset-0 z-50 lg:hidden",
+        mdHidden && "lg:hidden",
         !open && "pointer-events-none"
       )}
     >
