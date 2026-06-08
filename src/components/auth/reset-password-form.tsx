@@ -99,6 +99,73 @@ async function postJson(
   }
 }
 
+/** Normalized outcome of a send-OTP request, shared by step 1 and resend. */
+/** (TH) ผลลัพธ์ที่ normalize ของคำขอส่ง OTP ใช้ร่วมกันระหว่างขั้น 1 และส่งใหม่ */
+type SendOutcome =
+  | { ok: true; expiresAt: number }
+  | { ok: false; rateLimitedMs: number | null };
+
+/**
+ * Call `POST /api/auth/send-otp` and normalize the response into a `SendOutcome`
+ * (success with expiry, a rate-limit wait, or a generic failure). Used by both
+ * the identity step and the OTP resend button so they map responses identically.
+ *
+ * (TH) เรียก `POST /api/auth/send-otp` แล้ว normalize เป็น `SendOutcome`
+ * (สำเร็จพร้อมวันหมดอายุ, เวลารอ rate-limit, หรือล้มเหลวแบบ generic) ใช้ทั้งขั้น
+ * ตัวตนและปุ่มส่งใหม่ เพื่อให้ map ผลเหมือนกัน
+ */
+async function requestSendOtp(
+  method: DeliveryMethod,
+  identifier: string
+): Promise<SendOutcome> {
+  const { status, data } = await postJson("/api/auth/send-otp", {
+    method,
+    identifier,
+  });
+  if (status === 200 && data.ok) {
+    return { ok: true, expiresAt: Number(data.expiresAt) };
+  }
+  if (status === 429) {
+    return { ok: false, rateLimitedMs: Number(data.retryAfter ?? 0) * 1000 };
+  }
+  return { ok: false, rateLimitedMs: null };
+}
+
+/**
+ * Translate a verify-OTP failure body into user-facing copy + whether the user
+ * must request a new code (expired/locked codes can't be retried).
+ *
+ * (TH) แปลง body ที่ตรวจ OTP ล้มเหลวเป็นข้อความสำหรับผู้ใช้ + บอกว่าต้องขอโค้ด
+ * ใหม่ไหม (โค้ดที่หมดอายุ/ถูกล็อกลองซ้ำไม่ได้)
+ */
+function verifyErrorToState(data: Record<string, unknown>): {
+  message: string;
+  mustResend: boolean;
+} {
+  if (data.error === "locked") {
+    return {
+      message: "Too many incorrect attempts. Please request a new code.",
+      mustResend: true,
+    };
+  }
+  if (data.error === "expired") {
+    return {
+      message: "That code has expired. Request a new one.",
+      mustResend: true,
+    };
+  }
+  if (data.error === "invalid") {
+    const left = Number(data.attemptsRemaining ?? 0);
+    return {
+      message: `Invalid verification code. ${left} attempt${
+        left === 1 ? "" : "s"
+      } remaining.`,
+      mustResend: false,
+    };
+  }
+  return { message: "Invalid verification code.", mustResend: false };
+}
+
 /**
  * Tick every second and return the milliseconds remaining until `target`
  * (0 once passed, 0 when `target` is null). Used for the OTP countdown,
@@ -351,24 +418,20 @@ function IdentityStep({
   const submit = handleSubmit(async (values) => {
     setFormError(null);
     setSubmitting(true);
-    const { status, data } = await postJson("/api/auth/send-otp", {
-      method: values.method,
-      identifier: values.identifier,
-    });
+    const outcome = await requestSendOtp(values.method, values.identifier);
     setSubmitting(false);
 
-    if (status === 200 && data.ok) {
+    if (outcome.ok) {
       onSent({
         method: values.method,
         identifier: values.identifier,
-        expiresAt: Number(data.expiresAt),
+        expiresAt: outcome.expiresAt,
       });
       return;
     }
-    if (status === 429) {
-      const retry = Number(data.retryAfter ?? 0) * 1000;
+    if (outcome.rateLimitedMs != null) {
       setFormError(
-        `Too many requests. Please try again in ${formatMmSs(retry)}.`
+        `Too many requests. Please try again in ${formatMmSs(outcome.rateLimitedMs)}.`
       );
       return;
     }
@@ -665,20 +728,9 @@ function OtpStep({
     }
     // Map the (deliberately vague) failure into user-facing copy.
     // แปลงผลล้มเหลว (ที่จงใจกำกวม) เป็นข้อความสำหรับผู้ใช้
-    if (data.error === "locked") {
-      setServerError("Too many incorrect attempts. Please request a new code.");
-      setMustResend(true);
-    } else if (data.error === "expired") {
-      setServerError("That code has expired. Request a new one.");
-      setMustResend(true);
-    } else if (data.error === "invalid") {
-      const left = Number(data.attemptsRemaining ?? 0);
-      setServerError(
-        `Invalid verification code. ${left} attempt${left === 1 ? "" : "s"} remaining.`
-      );
-    } else {
-      setServerError("Invalid verification code.");
-    }
+    const { message, mustResend: needsNewCode } = verifyErrorToState(data);
+    setServerError(message);
+    if (needsNewCode) setMustResend(true);
     reset({ code: "" });
   });
 
@@ -686,25 +738,21 @@ function OtpStep({
     if (!canResend) return;
     setResending(true);
     setServerError(null);
-    const { status, data } = await postJson("/api/auth/send-otp", {
-      method,
-      identifier,
-    });
+    const outcome = await requestSendOtp(method, identifier);
     setResending(false);
 
-    if (status === 200 && data.ok) {
-      setExpiresAt(Number(data.expiresAt));
+    if (outcome.ok) {
+      setExpiresAt(outcome.expiresAt);
       setSentAt(Date.now());
       setRateLimitedUntil(null);
       setMustResend(false);
       reset({ code: "" });
       return;
     }
-    if (status === 429) {
-      const retry = Number(data.retryAfter ?? 0);
-      setRateLimitedUntil(Date.now() + retry * 1000);
+    if (outcome.rateLimitedMs != null) {
+      setRateLimitedUntil(Date.now() + outcome.rateLimitedMs);
       setServerError(
-        `Too many requests. Try again in ${formatMmSs(retry * 1000)}.`
+        `Too many requests. Try again in ${formatMmSs(outcome.rateLimitedMs)}.`
       );
       return;
     }

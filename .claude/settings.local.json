@@ -44,7 +44,8 @@
       "Bash(corepack pnpm@10 exec tsc --noEmit --noUnusedLocals --noUnusedParameters src/lib/otp/store.ts src/lib/otp/service.ts src/lib/otp/delivery.ts src/lib/reset-password-schema.ts src/components/ui/otp-input.tsx --module esnext --moduleResolution bundler --target ES2022 --jsx preserve --skipLibCheck --strict)",
       "Bash(grep -rnE \"^\\\\s*//\\\\s*\\(const|let|var|return|if|for|await|import|function|console\\\\.|setStep|fetch\\\\\\(\\)\" src/lib/otp src/components/auth/reset-password-form.tsx src/lib/reset-password-schema.ts src/components/ui/otp-input.tsx src/app/api/auth)",
       "Bash(corepack pnpm@10 exec eslint src/lib/otp src/app/api/auth src/components/auth/reset-password-form.tsx src/lib/reset-password-schema.ts src/components/ui/otp-input.tsx src/app/reset-password/page.tsx)",
-      "Bash(echo \"  eslint exit: $?\")"
+      "Bash(echo \"  eslint exit: $?\")",
+      "PowerShell(Get-NetTCPConnection *)"
     ]
   }
 }

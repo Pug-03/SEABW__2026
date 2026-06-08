@@ -28,7 +28,6 @@ import {
   clearOtp,
   incrementSendCount,
   sendWindowTtl,
-  type OtpRecord,
 } from "./store";
 import { sendOtpMessage } from "./delivery";
 import type { DeliveryMethod } from "@/lib/reset-password-schema";
@@ -101,13 +100,51 @@ function generateCode(): string {
 }
 
 /**
- * Issue and deliver a fresh OTP for `(method, identifier)`. Enforces the send
- * rate-limit first, then stores the bcrypt hash with a 5-minute TTL and hands
- * the raw code to the delivery layer. The raw code never leaves this function.
+ * Generate a fresh code, bcrypt-hash it, and store the record under `key` with
+ * a 5-minute TTL. Returns the raw code (for delivery) and its expiry.
  *
- * (TH) ออกและส่ง OTP ใหม่สำหรับ `(method, identifier)` บังคับ rate-limit การ
- * ส่งก่อน แล้วเก็บ bcrypt hash พร้อม TTL 5 นาที และส่งโค้ดดิบให้ชั้น delivery
- * โค้ดดิบจะไม่ออกนอกฟังก์ชันนี้
+ * (TH) สร้างโค้ดใหม่, hash ด้วย bcrypt, และเก็บ record ใต้ `key` พร้อม TTL 5
+ * นาที คืนโค้ดดิบ (สำหรับส่ง) และเวลาหมดอายุ
+ */
+async function persistNewOtp(
+  key: string
+): Promise<{ code: string; expiresAt: number }> {
+  const code = generateCode();
+  const hash = await bcrypt.hash(code, BCRYPT_ROUNDS);
+  const expiresAt = Date.now() + OTP_TTL_SECONDS * 1000;
+  await saveOtp(key, { hash, attempts: 0, expiresAt }, OTP_TTL_SECONDS);
+  return { code, expiresAt };
+}
+
+/**
+ * Deliver `code` over `method`. On failure, drop the stored record (so a failed
+ * send can't be brute-forced later) and report failure. Returns `true` on
+ * success.
+ *
+ * (TH) ส่ง `code` ผ่าน `method` ถ้าล้มเหลวให้ลบ record ที่เก็บไว้ (กันการเดา
+ * ภายหลัง) แล้วรายงานล้มเหลว คืน `true` เมื่อสำเร็จ
+ */
+async function deliverOrRollback(
+  method: DeliveryMethod,
+  key: string,
+  code: string
+): Promise<boolean> {
+  try {
+    await sendOtpMessage(method, key, code);
+    return true;
+  } catch {
+    await clearOtp(key);
+    return false;
+  }
+}
+
+/**
+ * Issue and deliver a fresh OTP for `(method, identifier)`. Enforces the send
+ * rate-limit, stores the bcrypt hash with a 5-minute TTL, then delivers the
+ * code. The raw code never leaves this module.
+ *
+ * (TH) ออกและส่ง OTP ใหม่สำหรับ `(method, identifier)` บังคับ rate-limit การส่ง,
+ * เก็บ bcrypt hash พร้อม TTL 5 นาที แล้วส่งโค้ด โค้ดดิบจะไม่ออกนอกโมดูลนี้
  */
 export async function issueOtp(
   method: DeliveryMethod,
@@ -115,33 +152,18 @@ export async function issueOtp(
 ): Promise<IssueResult> {
   const key = normalizeIdentifier(method, identifier);
 
-  // 1) Rate-limit: max MAX_SENDS sends per SEND_WINDOW_SECONDS.
-  // 1) rate-limit: ส่งได้สูงสุด MAX_SENDS ครั้งต่อ SEND_WINDOW_SECONDS
+  // Rate-limit: max MAX_SENDS sends per SEND_WINDOW_SECONDS.
+  // rate-limit: ส่งได้สูงสุด MAX_SENDS ครั้งต่อ SEND_WINDOW_SECONDS
   const sends = await incrementSendCount(key, SEND_WINDOW_SECONDS);
   if (sends > MAX_SENDS) {
     const retryAfter = await sendWindowTtl(key);
     return { ok: false, reason: "rate_limited", retryAfter };
   }
 
-  // 2) Generate + hash + store with a 5-minute TTL.
-  // 2) สร้าง + hash + เก็บพร้อม TTL 5 นาที
-  const code = generateCode();
-  const hash = await bcrypt.hash(code, BCRYPT_ROUNDS);
-  const expiresAt = Date.now() + OTP_TTL_SECONDS * 1000;
-  const record: OtpRecord = { hash, attempts: 0, expiresAt };
-  await saveOtp(key, record, OTP_TTL_SECONDS);
-
-  // 3) Deliver. On failure, surface a generic reason (no provider details).
-  // 3) ส่ง ถ้าล้มเหลวคืนเหตุผลแบบ generic (ไม่บอกรายละเอียดผู้ให้บริการ)
-  try {
-    await sendOtpMessage(method, key, code);
-  } catch {
-    // Drop the stored code so a failed send can't be guessed against later.
-    // ลบโค้ดที่เก็บไว้ เพื่อไม่ให้การส่งที่ล้มเหลวถูกเดาภายหลัง
-    await clearOtp(key);
+  const { code, expiresAt } = await persistNewOtp(key);
+  if (!(await deliverOrRollback(method, key, code))) {
     return { ok: false, reason: "delivery_failed" };
   }
-
   return { ok: true, expiresAt };
 }
 
@@ -160,8 +182,8 @@ export async function verifyOtp(
   identifier: string,
   code: string
 ): Promise<VerifyResult> {
-  // The code may have been issued via email or sms — both normalize the same
-  // for email, but phone differs, so try the phone form too.
+  // The code may have been issued via email or sms — they normalize the same
+  // for email but differently for phone, so try both forms.
   // โค้ดอาจถูกออกผ่าน email หรือ sms — ลองทั้งสองรูปแบบ
   const candidates = Array.from(
     new Set([
@@ -171,40 +193,57 @@ export async function verifyOtp(
   );
 
   for (const key of candidates) {
-    const record = await loadOtp(key);
-    if (!record) continue;
-
-    // Attempt cap reached → burn the code and lock this request.
-    // ถึงเพดานครั้ง → เผาโค้ดและล็อกคำขอนี้
-    if (record.attempts >= MAX_VERIFY_ATTEMPTS) {
-      await clearOtp(key);
-      return { ok: false, reason: "locked" };
-    }
-
-    const match = await bcrypt.compare(code, record.hash);
-    if (match) {
-      // Success consumes the code (one OTP, one use).
-      // สำเร็จแล้วใช้โค้ดทิ้ง (หนึ่ง OTP ต่อหนึ่งการใช้)
-      await clearOtp(key);
-      return { ok: true };
-    }
-
-    // Wrong code → bump attempts (without extending TTL).
-    // โค้ดผิด → เพิ่มครั้ง (โดยไม่ต่ออายุ TTL)
-    const attempts = record.attempts + 1;
-    if (attempts >= MAX_VERIFY_ATTEMPTS) {
-      await clearOtp(key);
-      return { ok: false, reason: "locked" };
-    }
-    await updateOtp(key, { ...record, attempts });
-    return {
-      ok: false,
-      reason: "invalid",
-      attemptsRemaining: MAX_VERIFY_ATTEMPTS - attempts,
-    };
+    const result = await verifyCodeAt(key, code);
+    if (result) return result;
   }
 
   // No live code for this identifier → treat as expired/invalid generically.
   // ไม่มีโค้ดที่ยังใช้ได้สำหรับ identifier นี้ → ถือว่าหมดอายุ/ไม่ถูกต้องแบบ generic
   return { ok: false, reason: "expired" };
+}
+
+/**
+ * Check `code` against the stored record at `key`. Consumes the code on
+ * success, burns it once the attempt cap is hit, otherwise bumps the attempt
+ * counter. Returns the terminal result, or `null` when there's no record here
+ * (so the caller can try the next candidate key).
+ *
+ * (TH) ตรวจ `code` กับ record ที่ `key` สำเร็จแล้วใช้โค้ดทิ้ง, ถึงเพดานครั้งให้
+ * เผาทิ้ง, ไม่งั้นเพิ่มตัวนับ คืนผลสุดท้าย หรือ `null` เมื่อไม่มี record ที่นี่
+ * (ให้ผู้เรียกลอง key ถัดไป)
+ */
+async function verifyCodeAt(
+  key: string,
+  code: string
+): Promise<VerifyResult | null> {
+  const record = await loadOtp(key);
+  if (!record) return null;
+
+  // Attempt cap reached → burn the code and lock this request.
+  // ถึงเพดานครั้ง → เผาโค้ดและล็อกคำขอนี้
+  if (record.attempts >= MAX_VERIFY_ATTEMPTS) {
+    await clearOtp(key);
+    return { ok: false, reason: "locked" };
+  }
+
+  // Correct code → consume it (one OTP, one use).
+  // โค้ดถูก → ใช้ทิ้ง (หนึ่ง OTP ต่อหนึ่งการใช้)
+  if (await bcrypt.compare(code, record.hash)) {
+    await clearOtp(key);
+    return { ok: true };
+  }
+
+  // Wrong code → bump attempts (without extending TTL); lock once at the cap.
+  // โค้ดผิด → เพิ่มครั้ง (ไม่ต่ออายุ TTL); ล็อกเมื่อถึงเพดาน
+  const attempts = record.attempts + 1;
+  if (attempts >= MAX_VERIFY_ATTEMPTS) {
+    await clearOtp(key);
+    return { ok: false, reason: "locked" };
+  }
+  await updateOtp(key, { ...record, attempts });
+  return {
+    ok: false,
+    reason: "invalid",
+    attemptsRemaining: MAX_VERIFY_ATTEMPTS - attempts,
+  };
 }
