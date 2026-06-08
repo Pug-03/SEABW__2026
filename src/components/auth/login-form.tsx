@@ -12,6 +12,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { ArrowRight, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -133,9 +134,15 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
       {/* บรรทัดช่วยกรณีลืมรหัสผ่าน (ยังไม่ wire จริงใน demo) */}
       <p className="text-center text-xs text-muted-foreground">
         Forgot password?
-        {/* Accent-colored "Reset" link — placeholder for future flow. */}
-        {/* ข้อความ "Reset" สี accent — placeholder รอเชื่อมขั้นตอน reset จริง */}
-        <span className="text-accent"> Reset</span>
+        {/* Accent-colored "Reset" link → 3-step reset-password flow. */}
+        {/* ข้อความ "Reset" สี accent → flow รีเซ็ตรหัสผ่าน 3 ขั้น */}
+        <Link
+          href="/reset-password"
+          className="text-accent hover:underline"
+        >
+          {" "}
+          Reset
+        </Link>
       </p>
     </form>
   );

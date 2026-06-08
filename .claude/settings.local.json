@@ -28,7 +28,15 @@
       "PowerShell(Get-NetTCPConnection -LocalPort 3000,8081 -ErrorAction SilentlyContinue | Select-Object LocalPort, OwningProcess | ForEach-Object { $proc = Get-Process -Id $_.OwningProcess -ErrorAction SilentlyContinue; [PSCustomObject]@{ Port = $_.LocalPort; PID = $_.OwningProcess; Name = $proc.Name } } | Format-Table -AutoSize)",
       "PowerShell(Stop-Process -Id 23480,19448 -Force -ErrorAction SilentlyContinue)",
       "PowerShell(Get-NetTCPConnection -LocalPort 3000,8081 -ErrorAction SilentlyContinue)",
-      "Bash(grep -E '\\\\.\\(ts|tsx|js|jsx\\)$')"
+      "Bash(grep -E '\\\\.\\(ts|tsx|js|jsx\\)$')",
+      "PowerShell(npm install *)",
+      "PowerShell(pnpm add *)",
+      "PowerShell(pnpm *)",
+      "PowerShell(corepack pnpm@10 *)",
+      "Bash(git log *)",
+      "Bash(ls my-app/tsconfig.json)",
+      "Bash(corepack pnpm@10 exec tsc --noEmit)",
+      "PowerShell($conns = Get-NetTCPConnection -LocalPort 3939 -State Listen -ErrorAction SilentlyContinue; if \\($conns\\) { $conns | Select-Object -ExpandProperty OwningProcess -Unique | ForEach-Object { try { Stop-Process -Id $_ -Force -ErrorAction Stop; \"Stopped PID $_\" } catch { \"Could not stop PID $_\" } } } else { \"No listener on 3939 \\(already stopped\\)\" })"
     ]
   }
 }
