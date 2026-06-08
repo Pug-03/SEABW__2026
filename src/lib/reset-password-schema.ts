@@ -20,41 +20,62 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 /** (TH) เบอร์โทร: 9–15 หลักหลังตัดช่องว่าง ขีด วงเล็บ และ + นำหน้า */
 const PHONE_RE = /^\+?[0-9]{9,15}$/;
 
-/**
- * True when `value` looks like an email OR a phone number. Phone is
- * normalized (separators removed) before the regex test.
- *
- * (TH) คืน true เมื่อ `value` เป็นอีเมลหรือเบอร์โทร โดยเบอร์โทรจะถูกตัด
- * ตัวคั่นออกก่อนทดสอบด้วย regex
- */
-export function isEmailOrPhone(value: string): boolean {
-  const v = value.trim();
-  if (EMAIL_RE.test(v)) return true;
-  return PHONE_RE.test(v.replace(/[\s\-()]/g, ""));
+/** True when `value` is a plausible email address. */
+/** (TH) คืน true เมื่อ `value` เป็นอีเมลที่ดูสมเหตุสมผล */
+export function isEmail(value: string): boolean {
+  return EMAIL_RE.test(value.trim());
 }
 
+/** True when `value` is a plausible phone number (separators ignored). */
+/** (TH) คืน true เมื่อ `value` เป็นเบอร์โทรที่ดูสมเหตุสมผล (ละตัวคั่น) */
+export function isPhone(value: string): boolean {
+  return PHONE_RE.test(value.trim().replace(/[\s\-()]/g, ""));
+}
+
+/** OTP delivery channels — single source of truth for the channel union. */
+/** (TH) ช่องทางส่ง OTP — แหล่งความจริงเดียวของ union ช่องทาง */
+const deliveryMethods = ["email", "sms"] as const;
+export type DeliveryMethod = (typeof deliveryMethods)[number];
+
 /**
- * Step-1 schema. National ID must be exactly 13 digits; the contact
- * field must be a plausible email or phone. We intentionally do NOT
- * check whether the account exists here — that happens server-side and
- * always returns a generic response (see `reset-password-service`) to
- * prevent account-enumeration attacks.
+ * Step-1 schema. National ID must be exactly 13 digits; `method` picks the
+ * delivery channel and `identifier` must match it (email for "email", phone
+ * for "sms"). We intentionally do NOT check whether the account exists here —
+ * that's enforced server-side with generic responses to prevent
+ * account-enumeration attacks.
  *
- * (TH) สคีมาขั้น 1 — เลขบัตรต้องเป็นตัวเลข 13 หลักพอดี และช่องติดต่อ
- * ต้องเป็นอีเมลหรือเบอร์โทรที่ดูสมเหตุสมผล เราจงใจไม่เช็คว่ามีบัญชีจริง
- * ไหมตรงนี้ (ทำที่ server และตอบแบบ generic เสมอเพื่อกัน enumeration)
+ * (TH) สคีมาขั้น 1 — เลขบัตรต้องเป็นตัวเลข 13 หลักพอดี; `method` เลือกช่องส่ง
+ * และ `identifier` ต้องตรงกับช่อง (อีเมลสำหรับ "email", เบอร์สำหรับ "sms")
+ * เราจงใจไม่เช็คว่ามีบัญชีจริงไหมตรงนี้ (บังคับฝั่ง server แบบ generic เพื่อ
+ * กัน enumeration)
  */
-export const identitySchema = z.object({
-  nationalId: z
-    .string()
-    .trim()
-    .regex(/^\d{13}$/, "Enter your 13-digit National ID"),
-  contact: z
-    .string()
-    .trim()
-    .min(1, "Enter your email or phone")
-    .refine(isEmailOrPhone, "Enter a valid email or phone number"),
-});
+export const identitySchema = z
+  .object({
+    method: z.enum(deliveryMethods),
+    nationalId: z
+      .string()
+      .trim()
+      .regex(/^\d{13}$/, "Enter your 13-digit National ID"),
+    identifier: z.string().trim().min(1, "Enter your email or phone"),
+  })
+  .superRefine((val, ctx) => {
+    // Identifier format must match the chosen channel.
+    // รูปแบบ identifier ต้องตรงกับช่องที่เลือก
+    if (val.method === "email" && !isEmail(val.identifier)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["identifier"],
+        message: "Enter a valid email address",
+      });
+    }
+    if (val.method === "sms" && !isPhone(val.identifier)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["identifier"],
+        message: "Enter a valid phone number",
+      });
+    }
+  });
 export type IdentityValues = z.infer<typeof identitySchema>;
 
 // ─── Step 2 — OTP ────────────────────────────────────────────────────────────
@@ -110,7 +131,7 @@ export type PasswordValues = z.infer<typeof passwordSchema>;
 
 /** Three-level strength label used by the meter. */
 /** (TH) ระดับความแข็งแรง 3 ขั้นที่มิเตอร์ใช้ */
-export type PasswordStrength = "weak" | "medium" | "strong";
+type PasswordStrength = "weak" | "medium" | "strong";
 
 /**
  * Score a password against `PASSWORD_RULES` plus a length bonus, then map

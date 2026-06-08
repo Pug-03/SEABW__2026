@@ -36,7 +36,15 @@
       "Bash(git log *)",
       "Bash(ls my-app/tsconfig.json)",
       "Bash(corepack pnpm@10 exec tsc --noEmit)",
-      "PowerShell($conns = Get-NetTCPConnection -LocalPort 3939 -State Listen -ErrorAction SilentlyContinue; if \\($conns\\) { $conns | Select-Object -ExpandProperty OwningProcess -Unique | ForEach-Object { try { Stop-Process -Id $_ -Force -ErrorAction Stop; \"Stopped PID $_\" } catch { \"Could not stop PID $_\" } } } else { \"No listener on 3939 \\(already stopped\\)\" })"
+      "PowerShell($conns = Get-NetTCPConnection -LocalPort 3939 -State Listen -ErrorAction SilentlyContinue; if \\($conns\\) { $conns | Select-Object -ExpandProperty OwningProcess -Unique | ForEach-Object { try { Stop-Process -Id $_ -Force -ErrorAction Stop; \"Stopped PID $_\" } catch { \"Could not stop PID $_\" } } } else { \"No listener on 3939 \\(already stopped\\)\" })",
+      "Bash(git rm *)",
+      "PowerShell($conns = Get-NetTCPConnection -LocalPort 3940 -State Listen -ErrorAction SilentlyContinue; if \\($conns\\) { $conns | Select-Object -ExpandProperty OwningProcess -Unique | ForEach-Object { try { Stop-Process -Id $_ -Force -ErrorAction Stop; \"Stopped PID $_\" } catch {} } } else { \"already stopped\" })",
+      "Bash(corepack pnpm@10 exec eslint src/lib/otp src/app/api/auth src/components/auth/reset-password-form.tsx src/components/auth/login-form.tsx src/lib/reset-password-schema.ts src/components/ui/otp-input.tsx src/app/reset-password/page.tsx)",
+      "Bash(echo \"== exit: $? ==\")",
+      "Bash(corepack pnpm@10 exec tsc --noEmit --noUnusedLocals --noUnusedParameters src/lib/otp/store.ts src/lib/otp/service.ts src/lib/otp/delivery.ts src/lib/reset-password-schema.ts src/components/ui/otp-input.tsx --module esnext --moduleResolution bundler --target ES2022 --jsx preserve --skipLibCheck --strict)",
+      "Bash(grep -rnE \"^\\\\s*//\\\\s*\\(const|let|var|return|if|for|await|import|function|console\\\\.|setStep|fetch\\\\\\(\\)\" src/lib/otp src/components/auth/reset-password-form.tsx src/lib/reset-password-schema.ts src/components/ui/otp-input.tsx src/app/api/auth)",
+      "Bash(corepack pnpm@10 exec eslint src/lib/otp src/app/api/auth src/components/auth/reset-password-form.tsx src/lib/reset-password-schema.ts src/components/ui/otp-input.tsx src/app/reset-password/page.tsx)",
+      "Bash(echo \"  eslint exit: $?\")"
     ]
   }
 }
